@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import { spawn, ChildProcess } from 'child_process';
 
 // Cor elibs
-import Keyboard from '../../src/server/utils/keyboard';
+import Keyboard from '../utils/keyboard';
 
 // Configs
 import createCompilers, { compiling } from '../compiler';
@@ -42,7 +42,7 @@ export const run = () => new Promise<void>(async () => {
         poll: 1000,
 
         // Decrease CPU or memory usage in some file systems
-        ignored: /node_modules\/(?!5\-htp\/src\/)/,
+        ignored: /node_modules\/(?!5htp\-core\/src\/)/,
 
         //aggregateTimeout: 1000,
     }, async (error, stats) => {

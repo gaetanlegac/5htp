@@ -11,7 +11,9 @@ import fs from 'fs-extra';
 
 // Libs
 import Paths from './paths';
-import ConfigParser from '../src/server/app/config';
+import ConfigParser from '5htp-core/src/server/app/config';
+
+// Types from core
 
 /*----------------------------------
 - TYPES

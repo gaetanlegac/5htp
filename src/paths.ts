@@ -40,7 +40,7 @@ export default class Paths {
 
     public constructor( 
         public appRoot: string,
-        public coreRoot = appRoot + '/node_modules/5-htp'
+        public coreRoot = appRoot + '/node_modules/5htp-core'
     ) {
         
     }
