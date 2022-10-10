@@ -227,36 +227,33 @@ function Plugin (babel) {
                 ) {
 
                     // Extraction des attributs src et class
-                    let attrSrc: types.JSXAttribute | undefined = undefined;
-                    let attrClassName: any = undefined;
+                    const attrs: {[prop: string]: types.JSXAttribute["value"]} = {}
                     let nouveauxAttributs = path.node.openingElement.attributes.filter((attribut) => {
 
                         if (attribut.type === 'JSXAttribute' && attribut.name) {
 
                             if (attribut.name.name === 'src') {
-                                attrSrc = attribut;
+                                attrs.src = attribut.value
                                 return false;
                             } else if (attribut.name.name === 'class') {
-
-                                attrClassName = attribut.value;
-
+                                attrs.class = attribut.value
                                 return false;
                             }
                         }
                         return true;
                     });
 
-                    if (attrSrc === undefined)
+                    if (!attrs.src)
                         return;
 
                     // <i src="..." />
                     let classeIcone: types.StringLiteral | types.BinaryExpression | undefined = undefined;
 
                     // Chaine: On référence le nom de l'icon
-                    if (attrSrc.value.type === 'StringLiteral') {
+                    if (attrs.src.type === 'StringLiteral') {
 
                         // <i src="spin" /> =>  <i class="svg-xxxxx spin" />
-                        let valSrc = attrSrc.value.value
+                        let valSrc = attrs.src.value
                         if (valSrc === 'spin') {
 
                             const idIcone = this.referencerIcone('solid/spinner-third');
@@ -277,16 +274,22 @@ function Plugin (babel) {
 
                     // Autre: on renomme src en class et contatène le préfixe "svg-"
                     // <i src={icon} /> =>  <i class={"svg-" + icon} />
-                    } else if (attrSrc.value.type === 'JSXExpressionContainer') {
+                    } else if (attrs.src.type === 'JSXExpressionContainer' && attrs.src.expression.type !== 'JSXEmptyExpression') {
 
                         classeIcone = t.binaryExpression(
                             '+',
                             t.stringLiteral('svg-'),
-                            attrSrc.value.expression
+                            attrs.src.expression
                         );
 
                     } else
-                        throw new Error(`Type de valeur non-géré pour l'attribut src: ${attrSrc.value.type}`);
+                        throw new Error(`Type de valeur non-géré pour l'attribut src: ${attrs.src.type}`);
+
+                    const origClass = attrs.class?.type !== 'JSXExpressionContainer'
+                        ? attrs.class
+                        : attrs.class.expression.type !== 'JSXEmptyExpression'
+                            ? attrs.class.expression
+                            : null
 
                     path.replaceWith(
 
@@ -305,7 +308,7 @@ function Plugin (babel) {
                                         // concatSrc doit toujours être en premier dans les binary expressions
                                         // afin que le sélecteur CSS i[class^="svg-"] soit toujours valable
                                         t.jsxExpressionContainer(
-                                            attrClassName // Concaténation si attribut déjà défini
+                                            origClass // Concaténation si attribut déjà défini
                                                 ? t.binaryExpression(
                                                     '+',
                                                     classeIcone,
@@ -313,9 +316,7 @@ function Plugin (babel) {
                                                     t.binaryExpression(
                                                         '+',
                                                         t.stringLiteral(' '),
-                                                        attrClassName.type === 'JSXExpressionContainer'
-                                                            ? attrClassName.expression
-                                                            : attrClassName
+                                                        origClass
                                                     )
                                                 )
                                                 : classeIcone

@@ -83,17 +83,29 @@ function Plugin (babel) {
                 */
                 let objAttributs: types.ObjectProperty[] = [];
                 for (const attribut of balise.attributes)
-                    if (attribut.type === 'JSXAttribute' && attribut.value !== undefined)
+                    if (
+                        attribut.type === 'JSXAttribute' && 
+                        attribut.value !== undefined && 
+                        typeof attribut.name.name === "string"
+                    ) {
+
+                        let propValue: types.ObjectProperty["value"];
+                        if (attribut.value === null) // <Champ.titre autoFocus />
+                            propValue = t.booleanLiteral(true);
+                        else if (attribut.value.type !== 'JSXExpressionContainer')
+                            propValue = attribut.value;
+                        else if (attribut.value.expression.type !== 'JSXEmptyExpression')
+                            propValue = attribut.value.expression;
+                        else
+                            propValue = t.nullLiteral();
+
                         objAttributs.push(
                             t.objectProperty(
                                 t.identifier( attribut.name.name ),
-                                attribut.value === null // <Champ.titre autoFocus />
-                                    ? t.booleanLiteral(true)
-                                    : attribut.value.type === 'JSXExpressionContainer'
-                                        ? attribut.value.expression
-                                        : attribut.value
+                                propValue
                             )
                         )
+                    }
 
                 // Traverse chaque branche du chemin du champ, dans l'ordre inverse
                 // NOTE: on aurai pu reconstituer le chemin et créer les memberexpressions en une seule itération

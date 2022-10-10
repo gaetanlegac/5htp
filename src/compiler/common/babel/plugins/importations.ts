@@ -260,7 +260,7 @@ function Plugin (babel, { rules, debug, removeAliases }: TOptions & { rules: TTr
                             remplacement.push(
                                 t.importDeclaration(
                                     [],
-                                    t.stringLiteral(fichier)
+                                    t.stringLiteral(fichier.filename)
                                 )
                             );
 

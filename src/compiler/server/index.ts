@@ -168,9 +168,9 @@ export default function createCompiler( mode: TCompileMode ): webpack.Configurat
             :*/ 'source-map', // Recommended choice for production builds with high quality SourceMaps.
 
             // eval-source-map n'est pas précis
-        devServer: {
+        /*devServer: {
             hot: true,
-        },
+        },*/
     };
 
     return config;
