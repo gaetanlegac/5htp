@@ -6,7 +6,7 @@
 	"repository": "git://github.com/gaetanlegac/5htp-cli.git",
 	"license": "MIT",
 	"bin": {
-		"5htp": "cli/index.ts"
+		"5htp": "src/index.ts"
 	},
 	"engines": {
 		"node": ">=16.1.0",
@@ -42,7 +42,6 @@
 		"@types/universal-analytics": "^0.4.5",
 		"@types/webpack-env": "^1.16.2",
 		"@types/ws": "^7.4.7",
-		"5htp-core": "^0.0.2",
 		"babel-loader": "^8.2.2",
 		"babel-plugin-transform-imports": "^2.0.0",
 		"babel-plugin-transform-react-remove-prop-types": "^0.4.24",
@@ -90,5 +89,8 @@
 		"@types/nodemailer": "^6.4.4",
 		"@types/prompts": "^2.0.14",
 		"@types/webpack-env": "^1.16.2"
-	}
+	},
+    "peerDependencies": {
+        "5htp-core": "^0.0.3"
+    }
 }
