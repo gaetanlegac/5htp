@@ -8,7 +8,7 @@ import prompts from 'prompts';
 
 // Core
 import cli from '../..';
-import { api } from '../utils';
+import { api } from '../../utils';
 
 0/*----------------------------------
 - HELPERS
