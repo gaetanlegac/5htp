@@ -1,13 +1,33 @@
 {
-    "extends": "../tsconfig.common.json",
     "compilerOptions": {
-        "rootDir": "..",
-        "baseUrl": ".",
+        
+
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "allowJs": true,
+        "strict": false,
+        "downlevelIteration": true,
+
+        // Equivalent webpack: resolve.symblinks = false
+        "preserveSymlinks": true,
+        // Décorateurs
+        "experimentalDecorators": true,
+
+        // React
+        "jsx": "react-jsx",
+        "jsxImportSource": "preact",
+
+        "strictPropertyInitialization": true,
+        "strictNullChecks": true,
+        
+        "baseUrl": "./src",
+        "outDir": "./bin",
+
         "paths": {
             "@cli/*": [ "./*" ],
-            "@cli": [ "." ],
-            "@server/*": [ "../src/server/*" ],
-        }
+            "@cli": [ "./" ],
+            "@server_old/*": [ "../src/server/*" ]
+        },
     },
 
     "ts-node": {
