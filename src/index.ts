@@ -7,21 +7,18 @@
 // Npm
 import { Logger } from "tslog";
 import cp from 'child_process';
-import fs from 'fs-extra';
 
 // Libs
 import Paths from './paths';
 import ConfigParser from '5htp-core/src/server/app/config';
 
-// Types from core
-
 /*----------------------------------
 - TYPES
 ----------------------------------*/
 
-type TCliCommand = { 
+type TCliCommand = () => Promise<{ 
     run: () => Promise<void> 
-}
+}>
 
 export type TAppSide = 'server' | 'client'
 
@@ -65,9 +62,10 @@ export class CLI {
     - COMMANDS
     ----------------------------------*/
     // Les importations asynchrones permettent d'accéder à l'instance de cli via un import
+    // WARN: We load commands asynchonously, so the aliases are applied before the file is imported
     public commands: { [name: string]: TCliCommand } = {
-        "dev": require('./commands/dev'),
-        "build": require('./commands/build'),
+        "dev": () => import('./commands/dev'),
+        "build": () => import('./commands/build'),
     }
 
     public start() {
@@ -125,8 +123,10 @@ export class CLI {
         if (this.commands[command] === undefined)
             throw new Error(`Command ${command} does not exists.`);
 
+        const runner = await this.commands[command]();
+
         // Running
-        this.commands[command].run().then(() => {
+        runner.run().then(() => {
 
             console.info(`Command ${command} finished.`);
 
