@@ -46,9 +46,9 @@ export default class Paths {
     }
 
     public core = {
+        cli: path.resolve(__dirname, '..'),
         root: this.coreRoot,
         src: this.coreRoot + '/src',
-        realRoot: path.resolve(__dirname, '..'),
         pages: this.coreRoot + '/src/client/pages',
     }
 
@@ -148,7 +148,7 @@ export default class Paths {
 
     public applyAliases() {
 
-        const aliases = new TsAlias( this.core.root + '/cli' );
+        const aliases = new TsAlias( this.core.cli );
 
         console.log('Applying Aliases ...', aliases);
 
