@@ -32,7 +32,7 @@ export const run = () => new Promise<void>(async () => {
     });
 
     // Allow the dev servet to fetch the frameworg node modules
-    fs.createSymlinkSync( cli.paths.core.root + '/node_modules', cli.paths.app.bin + '/node_modules', 'dir' );
+    //fs.createSymlinkSync( cli.paths.core.cli + '/node_modules', cli.paths.app.bin + '/node_modules', 'dir' );
 
     multiCompiler.watch({
 
