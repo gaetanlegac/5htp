@@ -51,7 +51,9 @@ export default function createCommonConfig( side: TAppSide, mode: TCompileMode )
         resolveLoader: {
             // Recherche des loaders dans framework/node_modules (psinon, webpack cherche dans le projet)
             modules: [
-                cli.paths.appRoot + '/node_modules',
+                // The line below is not necessary
+                // By default, webpack is supposed to search in the project directory at first
+                //cli.paths.appRoot + '/node_modules',
                 cli.paths.core.root + '/node_modules',
                 cli.paths.core.cli + '/node_modules',
             ],
