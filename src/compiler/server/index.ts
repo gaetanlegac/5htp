@@ -82,7 +82,7 @@ export default function createCompiler( mode: TCompileMode ): webpack.Configurat
                 if (!shouldCompile) {
                     
                     // Externalize to a commonjs module using the request path
-                    return callback(null, 'commonjs ' + request);
+                    return callback(undefined, 'commonjs ' + request);
                 }
 
                 // Continue without externalizing the import
