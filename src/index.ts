@@ -10,7 +10,7 @@ import cp from 'child_process';
 
 // Libs
 import Paths from './paths';
-import ConfigParser from '5htp-core/src/server/app/config';
+import ConfigParser from './utils/config';
 
 /*----------------------------------
 - TYPES
