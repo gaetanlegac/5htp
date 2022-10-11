@@ -4,11 +4,6 @@
 
 // Npm
 import webpack from 'webpack';
-import TsAlias from 'ts-alias';
-import path from 'path';
-
-// Plugins
-var nodeExternals = require('webpack-node-externals');
 
 // Minimizers
 const TerserPlugin = require("terser-webpack-plugin");
@@ -27,8 +22,10 @@ export default function createCompiler( mode: TCompileMode ): webpack.Configurat
     const dev = mode === 'dev';
 
     const commonConfig = createCommonConfig('server', mode);
-
     const { aliases } = cli.paths.aliases.server.forWebpack(cli.paths.app.root + '/node_modules');
+
+    console.log(`[${mode}] node_modules dirs:`, commonConfig.resolveLoader?.modules,
+        '\nModule aliases:', aliases);
         
     const config: webpack.Configuration = {
 
