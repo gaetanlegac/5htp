@@ -33,8 +33,26 @@ export default class ConfigParser {
     }
 
     public env() {
-        const envFile = this.appDir + '/env' + (this.envName === undefined ? '' : '.' + this.envName) + '.yaml';
-        return this.loadYaml( envFile );
+        // We assume that when we run 5htp dev, we're in local
+        // Otherwise, we're in production environment (docker)
+        console.log("Using environment:", process.env.NODE_ENV);
+        return process.env.NODE_ENV === 'development' ? {
+            name: 'local',
+            profile: 'dev',
+            level: 'silly',
+        
+            localIP: '86.76.176.80',
+            domain: 'localhost:3010',
+            url: 'http://localhost:3010',
+        } : {
+            name: 'server',
+            profile: 'prod',
+            level: 'silly',
+        
+            localIP: '86.76.176.80',
+            domain: 'megacharger.io',
+            url: 'https://megacharger.io',
+        }
     }
 
     public identity() {
