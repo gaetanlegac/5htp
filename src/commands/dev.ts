@@ -7,11 +7,11 @@ import fs from 'fs-extra';
 import { spawn, ChildProcess } from 'child_process';
 
 // Cor elibs
+import cli from '../';
 import Keyboard from '../utils/keyboard';
 
 // Configs
 import createCompilers, { compiling } from '../compiler';
-import cli from '../';
 
 /*----------------------------------
 - COMMANDE
