@@ -64,6 +64,7 @@ export class CLI {
     // Les importations asynchrones permettent d'accéder à l'instance de cli via un import
     // WARN: We load commands asynchonously, so the aliases are applied before the file is imported
     public commands: { [name: string]: TCliCommand } = {
+        "init": () => import('./commands/init'),
         "dev": () => import('./commands/dev'),
         "build": () => import('./commands/build'),
     }
@@ -162,7 +163,7 @@ export class CLI {
             /*const tempFile = this.paths.app.root + '/.exec.sh';
             fs.outputFileSync(tempFile, '#! /bin/bash\n' + fullCommand);
             const wrappedCommand =  `tilix --new-process -e bash -c 'chmod +x "${tempFile}"; "${tempFile}"; echo "Entrée pour continuer"; read a;'`;*/
-            const wrappedCommand =  `bash -c '${fullCommand}; echo "Entrée pour continuer"; read a;'`;
+            const wrappedCommand =  `bash -c '${fullCommand}'`;
             console.log("Running command: " + wrappedCommand)
             //await this.waitForInput('enter');
 
@@ -180,6 +181,7 @@ export class CLI {
 
                 //fs.removeSync(tempFile);
 
+                console.log("Command finished.");
                 resolve();
             })
 
