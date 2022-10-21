@@ -15,6 +15,10 @@ import createClientConfig from './client';
 import { TCompileMode } from './common';
 import cli from '../';
 
+// types
+
+import type App from '../app';
+
 type TCompilerCallback = () => void
 
 /*----------------------------------
@@ -23,6 +27,7 @@ type TCompilerCallback = () => void
 export const compiling: { [compiler: string]: Promise<void> } = {};
 
 export default async function createCompilers( 
+    app: App,
     mode: TCompileMode,
     { before, after }: {
         before?: TCompilerCallback,
@@ -31,12 +36,12 @@ export default async function createCompilers(
 ) {
 
     // Cleanup
-    fs.emptyDirSync( cli.paths.app.bin );
+    fs.emptyDirSync( app.paths.bin );
 
     // Create compilers
     const multiCompiler = webpack([
-        smp.wrap( createServerConfig(mode) ),
-        smp.wrap( createClientConfig(mode) )
+        smp.wrap( createServerConfig(app, mode) ),
+        smp.wrap( createClientConfig(app, mode) )
     ]);
 
     for (const compiler of multiCompiler.compilers) {

@@ -5,9 +5,11 @@ import lessToJs from 'less-vars-to-js';
 import fs from 'fs-extra';
 import cli from '@cli';
 
-module.exports = (dev: Boolean, client: boolean) => {
+import type App from '../../../app';
 
-    const paletteLess = fs.readFileSync( cli.paths.app.src + '/client/assets/theme.less', 'utf8');
+module.exports = (app: App, dev: Boolean, client: boolean) => {
+
+    const paletteLess = fs.readFileSync( app.paths.src + '/client/assets/theme.less', 'utf8');
     const themeVars = lessToJs(paletteLess, { resolveVariables: true, stripPrefix: true });
 
     return [
@@ -19,7 +21,7 @@ module.exports = (dev: Boolean, client: boolean) => {
 
         // Process external/third-party styles
         {
-            exclude: [/*process.env.framework + '/kernel', */cli.paths.app.src],
+            exclude: [/*process.env.framework + '/kernel', */app.paths.src],
             loader: 'css-loader',
             options: {
                 sourceMap: dev
@@ -28,7 +30,7 @@ module.exports = (dev: Boolean, client: boolean) => {
 
         // Process internal/project styles (from src folder)
         {
-            include: [/*process.env.framework + '/kernel', */cli.paths.app.src],
+            include: [/*process.env.framework + '/kernel', */app.paths.src],
             loader: 'css-loader',
             options: {
                 // CSS Loader https://github.com/webpack/css-loader

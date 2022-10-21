@@ -26,29 +26,32 @@ import createCommonConfig, { TCompileMode, regex } from '../common';
 import identityAssets from './identite';
 import cli from '../..';
 
+// Type
+import type App from '../../app';
+
 /*----------------------------------
 - CONFIG
 ----------------------------------*/
-export default function createCompiler(mode: TCompileMode): webpack.Configuration {
+export default function createCompiler( app: App, mode: TCompileMode ): webpack.Configuration {
 
     console.info(`Creating compiler for client (${mode}).`);
     const dev = mode === 'dev';
 
-    const commonConfig = createCommonConfig('client', mode);
+    const commonConfig = createCommonConfig(app, 'client', mode);
 
     // Pas besoin d'attendre que les assets soient générés pour lancer la compilation
-    identityAssets();
+    identityAssets(app);
 
     // Symlinks to public
-    /*const publicDirs = fs.readdirSync(cli.paths.app.root + '/public');
+    /*const publicDirs = fs.readdirSync(app.paths.root + '/public');
     for (const publicDir of publicDirs)
         fs.symlinkSync( 
-            cli.paths.app.root + '/public/' + publicDir,  
-            cli.paths.app.public + '/' + publicDir
+            app.paths.root + '/public/' + publicDir,  
+            app.paths.public + '/' + publicDir
         );*/
 
     // Convert tsconfig cli.paths to webpack aliases
-    const { aliases } = cli.paths.aliases.client.forWebpack(cli.paths.app.root + '/node_modules');
+    const { aliases } = app.aliases.client.forWebpack(app.paths.root + '/node_modules');
     // Disable access to server-side libs from client side
     delete aliases["@server"]; 
     delete aliases["@/server"]; 
@@ -73,7 +76,7 @@ export default function createCompiler(mode: TCompileMode): webpack.Configuratio
         output: {
 
             pathinfo: dev,
-            path: cli.paths.app.bin + '/public',
+            path: app.paths.bin + '/public',
             filename: '[name].js', // Output client.js
             assetModuleFilename: '[hash][ext]',
 
@@ -101,21 +104,21 @@ export default function createCompiler(mode: TCompileMode): webpack.Configuratio
                     test: regex.scripts,
                     include: [
 
-                        cli.paths.app.root + '/src/client',
+                        app.paths.root + '/src/client',
                         cli.paths.core.root + '/src/client',
 
-                        cli.paths.app.root + '/src/common',
+                        app.paths.root + '/src/common',
                         cli.paths.core.root + '/src/common',
 
                     ],
-                    rules: require('../common/babel')('client', dev)
+                    rules: require('../common/babel')(app, 'client', dev)
                 },
 
                 // Les pages étan tà la fois compilées dans le bundle client et serveur
                 // On ne compile les ressources (css) qu'une seule fois
                 {
                     test: regex.style,
-                    rules: require('../common/files/style')(true, dev),
+                    rules: require('../common/files/style')(app, true, dev),
 
                     // Don't consider CSS imports dead code even if the
                     // containing package claims to have no side effects.
@@ -124,14 +127,14 @@ export default function createCompiler(mode: TCompileMode): webpack.Configuratio
                     sideEffects: true,
                 },
 
-                ...require('../common/files/images')(dev, true),
+                ...require('../common/files/images')(app, dev, true),
 
-                ...require('../common/files/autres')(dev, true),
+                ...require('../common/files/autres')(app, dev, true),
 
                 // Exclude dev modules from production build
                 /*...(dev ? [] : [
                     {
-                        test: cli.paths.app.root + '/node_modules/react-deep-force-update/lib/index.js'),
+                        test: app.paths.root + '/node_modules/react-deep-force-update/lib/index.js'),
                         loader: 'null-loader',
                     },
                 ]),*/
@@ -149,7 +152,7 @@ export default function createCompiler(mode: TCompileMode): webpack.Configuratio
             // Emit a file with assets cli.paths
             // https://github.com/webdeveric/webpack-assets-manifest#options
             new WebpackAssetsManifest({
-                output: cli.paths.app.root + `/bin/asset-manifest.json`,
+                output: app.paths.root + `/bin/asset-manifest.json`,
                 publicPath: true,
                 writeToDisk: true, // Force la copie du fichier sur e disque, au lieu d'en mémoire en mode dev
                 customize: ({ key, value }) => {
@@ -159,7 +162,7 @@ export default function createCompiler(mode: TCompileMode): webpack.Configuratio
                 },
                 done: (manifest, stats) => {
                     // Write chunk-manifest.json.json
-                    const chunkFileName = cli.paths.app.root + `/bin/chunk-manifest.json`;
+                    const chunkFileName = app.paths.root + `/bin/chunk-manifest.json`;
                     try {
                         const fileFilter = file => !file.endsWith('.map');
                         const addPath = file => manifest.getPublicPath(file);

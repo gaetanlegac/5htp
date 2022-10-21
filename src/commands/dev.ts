@@ -13,12 +13,17 @@ import Keyboard from '../utils/keyboard';
 // Configs
 import createCompilers, { compiling } from '../compiler';
 
+// Core
+import App from '../app';
+
 /*----------------------------------
 - COMMANDE
 ----------------------------------*/
 export const run = () => new Promise<void>(async () => {
+    
+    const app = new App();
 
-    const multiCompiler = await createCompilers('dev', {
+    const multiCompiler = await createCompilers(app, 'dev', {
         before: () => {
 
             console.log('before');
@@ -32,7 +37,7 @@ export const run = () => new Promise<void>(async () => {
     });
 
     // Allow the dev servet to fetch the frameworg node modules
-    //fs.createSymlinkSync( cli.paths.core.cli + '/node_modules', cli.paths.app.bin + '/node_modules', 'dir' );
+    //fs.createSymlinkSync( cli.paths.core.cli + '/node_modules', app.paths.bin + '/node_modules', 'dir' );
 
     multiCompiler.watch({
 
@@ -53,7 +58,7 @@ export const run = () => new Promise<void>(async () => {
         }
 
         console.log("Watch callback. Reloading app ...");
-        startApp();
+        startApp(app);
 
     });
 
@@ -63,7 +68,7 @@ export const run = () => new Promise<void>(async () => {
         await Promise.all(Object.values(compiling));
 
         console.log(`Reloading app ...`);
-        startApp();
+        startApp(app);
 
     });
 
@@ -78,12 +83,12 @@ export const run = () => new Promise<void>(async () => {
 ----------------------------------*/
 let cp: ChildProcess | undefined = undefined;
 
-async function startApp() {
+async function startApp(app: App) {
 
     stopApp();
 
     console.info(`Launching new server ...`);
-    cp = spawn('node', ['' + cli.paths.app.bin + '/server.js', '--preserve-symlinks'], {
+    cp = spawn('node', ['' + app.paths.bin + '/server.js', '--preserve-symlinks'], {
 
         // sdin, sdout, sderr
         stdio: ['inherit', 'inherit', 'inherit']

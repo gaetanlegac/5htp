@@ -8,6 +8,9 @@ import prompts from 'prompts';
 // Configs
 import createCompilers from '../compiler';
 
+// Core
+import App from '../app';
+
 /*----------------------------------
 - TYPES
 ----------------------------------*/
@@ -17,7 +20,9 @@ import createCompilers from '../compiler';
 ----------------------------------*/
 export const run = (): Promise<void> => new Promise(async (resolve) => {
 
-    const multiCompiler = await createCompilers('prod');
+    const app = new App();
+
+    const multiCompiler = await createCompilers(app, 'prod');
 
     multiCompiler.run((error, stats) => {
 

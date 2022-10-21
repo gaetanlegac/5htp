@@ -11,63 +11,71 @@ import defaultMetadataProvider from 'svgicons2svgfont/src/metadata';
 import Indexeur from '../indexeur';
 import cli from '@cli';
 
-// Configs
-const formats = ['woff2'];
-const dossierIcones = cli.paths.core.src + '/client/assets/icons/';
-const dossierSortie = cli.paths.app.bin + '/public/'; 
-
-const cacheTypes = cli.paths.core.src + '/types/icons.d.ts';
-const cacheIndex = dossierIcones + 'index.json';
-
 // Types
 import type { TIndexIcones } from '../../../babel/plugins/icones-svg';
+import type App from '@cli/app';
 
 /*----------------------------------
 - UTILS
 ----------------------------------*/
-const refExistant = (dir: string): string[] => {
-
-    let filelist: string[] = [];
-
-    let files = fs.readdirSync(dossierIcones + dir);
-    for (const file of files)
-        if (fs.statSync(dossierIcones + dir + file).isDirectory())
-            filelist = [
-                ...filelist,
-                ...refExistant(dir + file + '/')
-            ];
-        else if (file.endsWith('.svg'))
-            filelist.push(dir + file.substring(0, file.length - 4));
-
-    return filelist;
-};
 
 /*----------------------------------
 - PLUGIN
 ----------------------------------*/
-export default class SelecteursApi extends Indexeur {
+export default class IconesSVG extends Indexeur {
 
     private icones: TIndexIcones = {};
     private iconesExistantes: string[] = [];
 
-    public constructor() {
+    private formats = ['woff2'];
+    private dossierIcones: string;
+    private dossierSortie: string;
+    
+    private cacheTypes: string;
+    private cacheIndex: string;
+
+    public constructor( app: App ) {
         super();
 
-        if (fs.existsSync(cacheIndex)) {
+        this.formats = ['woff2'];
+        this.dossierIcones = cli.paths.core.src + '/client/assets/icons/';
+        this.dossierSortie = app.paths.bin + '/public/'; 
+        
+        this.cacheTypes = cli.paths.core.src + '/types/icons.d.ts';
+        this.cacheIndex = this.dossierIcones + 'index.json';
+
+        if (fs.existsSync(this.cacheIndex)) {
 
             console.log('[icones] Getting icons list from cache ...');
-            this.iconesExistantes = fs.readJSONSync(cacheIndex);
+            this.iconesExistantes = fs.readJSONSync(this.cacheIndex);
 
         } else {
 
             console.log('[icones] Référencement des icones existantes ...');
-            this.iconesExistantes = refExistant('');
-            fs.outputJSONSync(cacheIndex, this.iconesExistantes);
+            this.iconesExistantes = this.refExistant('');
+            fs.outputJSONSync(this.cacheIndex, this.iconesExistantes);
 
         }
 
         console.log('[icones] ' + this.iconesExistantes.length + ' icones référencées');
     }
+
+    private refExistant = (dir: string): string[] => {
+    
+        let filelist: string[] = [];
+    
+        let files = fs.readdirSync(this.dossierIcones + dir);
+        for (const file of files)
+            if (fs.statSync(this.dossierIcones + dir + file).isDirectory())
+                filelist = [
+                    ...filelist,
+                    ...this.refExistant(dir + file + '/')
+                ];
+            else if (file.endsWith('.svg'))
+                filelist.push(dir + file.substring(0, file.length - 4));
+    
+        return filelist;
+    };
 
     /*----------------------------------
     - EVENTS
@@ -109,7 +117,7 @@ export default class SelecteursApi extends Indexeur {
         let typeIcones: string[] = [];
         for (const id in this.icones) {
             const icone = this.icones[id]
-            cheminIcones[ dossierIcones + icone.fichier ] = icone.id;
+            cheminIcones[ this.dossierIcones + icone.fichier ] = icone.id;
             typeIcones.push('"' + icone.nom + '"');
         }
 
@@ -128,9 +136,9 @@ export default class SelecteursApi extends Indexeur {
         const result = await webfont({
             files: Object.keys(cheminIcones),
             fontName: "icons",
-            template: dossierIcones + 'template.css',
+            template: this.dossierIcones + 'template.css',
             // @ts-ignore
-            formats,
+            formats: this.formats,
             templateClassName: 'svg',
             glyphTransformFn: (obj) => {
                 
@@ -171,11 +179,11 @@ export default class SelecteursApi extends Indexeur {
         console.log('[icones] Enregistrement de la police avec ' + typeIcones.length +' icones ...');
 
         // Enregistrement fichiers
-        for (const format of formats)
-            fs.outputFileSync(dossierSortie + 'icons.' + format, result[ format ]);
-        fs.outputFileSync(dossierSortie + 'icons.css', result.template);
+        for (const format of this.formats)
+            fs.outputFileSync(this.dossierSortie + 'icons.' + format, result[ format ]);
+        fs.outputFileSync(this.dossierSortie + 'icons.css', result.template);
 
-        fs.outputFileSync(cacheTypes, 'export type TIcones = ' + typeIcones.join('|') );
+        fs.outputFileSync(this.cacheTypes, 'export type TIcones = ' + typeIcones.join('|') );
 
         console.log("[icones] Police enregistrée.");
 

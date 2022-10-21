@@ -4,20 +4,22 @@ import fs from 'fs-extra';
 
 // Libs
 import cli from '../..';
-    
 
-export default async () => {
+// Type
+import type App from '../../app';
 
-    const dossierCache = cli.paths.app.root + '/public/app';
+export default async ( app: App ) => {
+
+    const dossierCache = app.paths.root + '/public/app';
 
     if (!fs.existsSync(dossierCache)) {
 
         console.info(`Generating identity assets ...`);
         fs.emptyDirSync(dossierCache);
 
-        const identity = cli.identity;
+        const identity = app.identity;
 
-        const response = await favicons( cli.paths.app.root + '/src/client/assets/identity/logo.svg', {
+        const response = await favicons( app.paths.root + '/src/client/assets/identity/logo.svg', {
 
             path: '/assets/img/identite/favicons/',
             appName: identity.name,

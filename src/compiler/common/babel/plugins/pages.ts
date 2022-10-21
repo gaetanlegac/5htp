@@ -9,7 +9,7 @@ import generate from '@babel/generator';
 
 // Core
 import cli from '@cli';
-import { TAppSide } from '@cli/index';
+import App, { TAppSide } from '../../../../app';
 
 /*----------------------------------
 - WEBPACK RULE
@@ -32,6 +32,8 @@ const debug = false;
 - PLUGIN
 ----------------------------------*/
 function Plugin(babel, { side }: TOptions) {
+
+    const app = new App();
 
     const t = babel.types as typeof types;
     let program: NodePath<types.Program>;
@@ -112,7 +114,7 @@ function Plugin(babel, { side }: TOptions) {
         } else
             routeArgs.unshift(t.objectExpression([]));
 
-        const { filepath, chunkId } = cli.paths.getPageChunk(filename);
+        const { filepath, chunkId } = cli.paths.getPageChunk(app, filename);
         debug && console.log(`[routes]`, filename, '=>', chunkId);
 
         // Add object property

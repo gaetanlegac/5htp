@@ -29,6 +29,11 @@ export const run = () => new Promise<void>(async () => {
         initial: "MyProject",
         validate: value => /[a-z0-9\-\.]/i.test(value) || "Must only include alphanumeric characters, and - . "
     },{
+        type: 'text', name: 'dirname',
+        message: 'Folder name ?',
+        initial: value => value.toLowerCase(),
+        validate: value => /[a-z0-9\-\.]/.test(value) || "Must only include lowercase alphanumeric characters, and - . "
+    },{
         type: 'text', name: 'description',
         message: 'Briefly describe your project to your mom:',
         initial: "It will revolutionnize the world",
@@ -46,7 +51,7 @@ export const run = () => new Promise<void>(async () => {
 
     const paths = {
         skeleton: path.join( cli.paths.core.cli, 'skeleton'),
-        project: path.join( process.cwd(), config.name.toLowerCase())
+        project: path.join( process.cwd(), config.dirname)
     }
 
     // Copy skeleton to cwd/<project-name>
@@ -74,7 +79,7 @@ export const run = () => new Promise<void>(async () => {
     cmd.runSync(`cd "${paths.project}" && npm i`);
 
     // Run demo app
-    console.info("Run demo ...");
-    await cli.shell('5htp dev');
+    /*console.info("Run demo ...");
+    await cli.shell('5htp dev');*/
 
 });

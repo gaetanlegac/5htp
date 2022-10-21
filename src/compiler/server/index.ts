@@ -13,16 +13,19 @@ const TerserPlugin = require("terser-webpack-plugin");
 import cli from '@cli';
 import createCommonConfig, { TCompileMode, regex } from '../common';
 
+// Type
+import type App from '../../app';
+
 /*----------------------------------
 - CONFIG
 ----------------------------------*/
-export default function createCompiler( mode: TCompileMode ): webpack.Configuration {
+export default function createCompiler( app: App, mode: TCompileMode ): webpack.Configuration {
 
     console.info(`Creating compiler for server (${mode}).`);
     const dev = mode === 'dev';
 
-    const commonConfig = createCommonConfig('server', mode);
-    const { aliases } = cli.paths.aliases.server.forWebpack(cli.paths.app.root + '/node_modules');
+    const commonConfig = createCommonConfig(app, 'server', mode);
+    const { aliases } = app.aliases.server.forWebpack(app.paths.root + '/node_modules');
 
     console.log(`[${mode}] node_modules dirs:`, commonConfig.resolveLoader?.modules,
         '\nModule aliases:', aliases);
@@ -35,7 +38,7 @@ export default function createCompiler( mode: TCompileMode ): webpack.Configurat
         target: 'node',
         entry: {
             server: [
-                cli.paths.app.root + '/src/server/index.ts',
+                app.paths.root + '/src/server/index.ts',
             ],
         },
 
@@ -45,7 +48,7 @@ export default function createCompiler( mode: TCompileMode ): webpack.Configurat
 
             libraryTarget: 'commonjs2',
 
-            path: cli.paths.app.bin,
+            path: app.paths.bin,
             filename: '[name].js',
             publicPath: '/',
             assetModuleFilename: 'public/[hash][ext]',
@@ -71,7 +74,7 @@ export default function createCompiler( mode: TCompileMode ): webpack.Configurat
                     ||
                     request[0] === '/'
                     ||
-                    cli.paths.aliases.server.containsAlias(request)
+                    app.aliases.server.containsAlias(request)
                 )
 
                 //console.log('isNodeModule', request, isNodeModule);
@@ -93,7 +96,7 @@ export default function createCompiler( mode: TCompileMode ): webpack.Configurat
 
             alias: {
                 ...aliases,
-                "@root": cli.paths.app.root,
+                "@root": app.paths.root,
             },
 
             extensions: ['.ts', '.tsx', ".json", ".sql"],
@@ -108,17 +111,17 @@ export default function createCompiler( mode: TCompileMode ): webpack.Configurat
                     test: regex.scripts,
                     include: [
 
-                        cli.paths.app.root + '/src/client',
+                        app.paths.root + '/src/client',
                         cli.paths.core.root + '/src/client',
 
-                        cli.paths.app.root + '/src/common',
+                        app.paths.root + '/src/common',
                         cli.paths.core.root + '/src/common',
 
                         // Dossiers server uniquement pour le bundle server
-                        cli.paths.app.root + '/src/server',
+                        app.paths.root + '/src/server',
                         cli.paths.core.root + '/src/server'
                     ],
-                    rules: require('../common/babel')('server', dev)
+                    rules: require('../common/babel')(app, 'server', dev)
                 }, 
 
                 // Les pages étan tà la fois compilées dans le bundle client et serveur
@@ -128,14 +131,14 @@ export default function createCompiler( mode: TCompileMode ): webpack.Configurat
                     loader: 'null-loader'
                 },
 
-                ...require('../common/files/images')(dev, false),
+                ...require('../common/files/images')(app, dev, false),
 
-                ...require('../common/files/autres')(dev, false),
+                ...require('../common/files/autres')(app, dev, false),
 
                 // Exclude dev modules from production build
                 /*...(dev ? [] : [
                     {
-                        test: cli.paths.app.root + '/node_modules/react-deep-force-update/lib/index.js'),
+                        test: app.paths.root + '/node_modules/react-deep-force-update/lib/index.js'),
                         loader: 'null-loader',
                     },
                 ]),*/

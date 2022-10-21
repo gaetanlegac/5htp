@@ -12,9 +12,9 @@ import cli from '@cli';
 /*----------------------------------
 - WEBPACK RULE
 ----------------------------------*/
-const globServices = cli.paths.app.root + '/src/server/services/**/*.ts';
+const globServices = app.paths.root + '/src/server/services/**/*.ts';
 const globModuleService = '@app/server/services/**';
-const globRoutes = cli.paths.app.root + '/src/server/routes/**/*.ts';
+const globRoutes = app.paths.root + '/src/server/routes/**/*.ts';
 
 module.exports = {
     test: [globRoutes, globServices],

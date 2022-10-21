@@ -1,7 +1,8 @@
 import { staticAssetName } from '../../../paths';
 import type webpack from 'webpack';
+import type App from '../../../app';
 
-module.exports = (dev: boolean, client: boolean): webpack.RuleSetRule[] => {
+module.exports = (app: App, dev: boolean, client: boolean): webpack.RuleSetRule[] => {
 
     return [{
         test: /\.(bmp|gif|jpg|jpeg|png|ico|svg)$/,

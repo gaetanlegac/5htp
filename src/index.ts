@@ -10,7 +10,6 @@ import cp from 'child_process';
 
 // Libs
 import Paths from './paths';
-import ConfigParser from './utils/config';
 
 /*----------------------------------
 - TYPES
@@ -19,8 +18,6 @@ import ConfigParser from './utils/config';
 type TCliCommand = () => Promise<{ 
     run: () => Promise<void> 
 }>
-
-export type TAppSide = 'server' | 'client'
 
 /*----------------------------------
 - CLASSE
@@ -32,28 +29,15 @@ export class CLI {
 
     // Context
     public args: TObjetDonnees = {};
-    public pkg = {
-        app: require(this.paths.app.root + '/package.json'),
-        core: require(this.paths.core.root + '/package.json'),
-    }
-    
-    // config
-    // WARNING: High level config files (env and services) shouldn't be loaded from the CLI
-    //  The CLI will be run on CircleCI, and no env file should be sent to this service
-    public identity!: Core.Config.Identity;
 
     public constructor(
         public paths = new Paths( process.cwd() )
     ) {
         console.log(`[cli] Start debugger ...`);
         new Logger({ name: "cli", overwriteConsole: true });
-        
+
         console.log(`[cli] Apply aliases ...`);
         this.paths.applyAliases();
-        
-        console.log(`[cli] Loading app config ...`);
-        const configParser = new ConfigParser( paths.appRoot );
-        this.identity = configParser.identity();
 
         this.start();
     }

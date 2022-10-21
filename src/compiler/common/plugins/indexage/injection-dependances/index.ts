@@ -10,7 +10,7 @@ import Indexeur from '../indexeur';
 import Stringify from '../_utils/Stringify';
 import cli from '@cli';
 
-const fichierSortie = cli.paths.app.cache + '/serveur/services.ts';
+const fichierSortie = app.paths.cache + '/serveur/services.ts';
 
 /*----------------------------------
 - TYPES

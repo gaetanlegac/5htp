@@ -13,8 +13,11 @@ import IconesSvg from './plugins/indexage/icones-svg';
 import InjectDeps from './plugins/indexage/injection-dependances';
 
 // Core
-import { TAppSide } from '@cli';
 import cli from '../..';
+
+// Type
+import type App from '../../app';
+import type { TAppSide } from '../../app';
 
 /*----------------------------------
 - CONSTANTS
@@ -38,13 +41,13 @@ export type TCompileMode = 'dev' | 'prod'
 - BASE CONFIG
 ----------------------------------*/
 
-export default function createCommonConfig( side: TAppSide, mode: TCompileMode ): webpack.Configuration {
+export default function createCommonConfig( app: App, side: TAppSide, mode: TCompileMode ): webpack.Configuration {
 
     const dev = mode === 'dev';
     const config: webpack.Configuration = {
 
         // Project root
-        context: cli.paths.app.root,
+        context: app.paths.root,
 
         mode: dev ? 'development' : 'production',
 
@@ -70,13 +73,13 @@ export default function createCommonConfig( side: TAppSide, mode: TCompileMode )
                 BUILD_DATE: JSON.stringify(dayjs().format('YY.MM.DD-HH.mm')),
 
                 CORE_PATH: JSON.stringify(cli.paths.core.root),
-                APP_PATH: JSON.stringify(cli.paths.app.root),
-                APP_NAME: JSON.stringify(cli.identity.web.title),
+                APP_PATH: JSON.stringify(app.paths.root),
+                APP_NAME: JSON.stringify(app.identity.web.title),
 
             }),
 
             new PluginIndexage(side === 'client' ? {
-                'icones-svg': new IconesSvg,
+                'icones-svg': new IconesSvg(app),
             } : {
                 //'injection-dependances': new InjectDeps,
             }),
@@ -110,7 +113,7 @@ export default function createCommonConfig( side: TAppSide, mode: TCompileMode )
 
             /*modules: [
                 cli.paths.core.root + '/node_modules',
-                cli.paths.app.root + '/node_modules',
+                app.paths.root + '/node_modules',
             ]*/
         },
 

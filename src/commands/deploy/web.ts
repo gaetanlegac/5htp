@@ -38,11 +38,11 @@ export async function run() {
 
     const { simulate } = cli.args;
 
-    const temp = cli.paths.app.root + '/.deployment';
+    const temp = app.paths.root + '/.deployment';
     fs.emptyDirSync(temp);
 
     // Merge package.json: framework + app
-    const appPkg = fs.readJSONSync(cli.paths.app.root + '/package.json');
+    const appPkg = fs.readJSONSync(app.paths.root + '/package.json');
     const corePkg = fs.readJSONSync(cli.paths.core.root + '/package.json');
     fs.outputJSONSync(temp + '/package.json', {
         ...appPkg,
@@ -51,7 +51,7 @@ export async function run() {
     }, { spaces: 4 });
 
     // Copy config file
-    fs.copyFileSync( cli.paths.app.root + (simulate ? '/env.yaml' : '/env.server.yaml'), temp + '/env.yaml' );
+    fs.copyFileSync( app.paths.root + (simulate ? '/env.yaml' : '/env.server.yaml'), temp + '/env.yaml' );
 
     // Compile & Run Docker
     await cli.shell(`docker compose up --build`);

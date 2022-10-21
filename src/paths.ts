@@ -4,23 +4,24 @@
 
 // Npm
 import path from 'path';
+import TsAlias from 'ts-alias';
 import moduleAlias from 'module-alias';
 
 // Core
-import TsAlias from 'ts-alias';
 
 /*----------------------------------
 - TYPES
 ----------------------------------*/
 
-import type { TAppSide } from '.';
+import type App from './app';
+import type { TAppSide } from './app';
 
 export type TPathInfos = {
 
     original: string,
     absolute: string,
     relative: string,
-    forImport: string,
+    //forImport: string,
 
     name: string,
     extension: string,
@@ -50,16 +51,6 @@ export default class Paths {
         root: this.coreRoot,
         src: this.coreRoot + '/src',
         pages: this.coreRoot + '/src/client/pages',
-    }
-
-    public app = {
-        root: this.appRoot,
-        src: this.appRoot + '/src',
-        bin: this.appRoot + '/bin',
-        data: this.appRoot + '/var/data',
-        public: this.appRoot + '/bin/public',
-        pages: this.appRoot + '/src/client/pages',
-        cache: this.appRoot + '/src/.cache'
     }
 
     /*----------------------------------
@@ -100,7 +91,8 @@ export default class Paths {
             absolute: cheminAbsolu,
             relative,
 
-            forImport: this.withAlias(cheminAbsolu, side),
+            // Not used anymore, but can be useful in the future
+            //forImport: this.withAlias(cheminAbsolu, side),
 
             name: nomReel,
             extension,
@@ -110,10 +102,10 @@ export default class Paths {
         return retour;
     }
 
-    public getPageChunk( file: string ) {
+    public getPageChunk( app: App, file: string ) {
 
-        const infos = this.infos( file, file.startsWith( this.app.pages ) 
-            ? this.app.pages 
+        const infos = this.infos( file, file.startsWith( app.paths.pages ) 
+            ? app.paths.pages 
             : this.core.pages,
         );
 
@@ -130,21 +122,6 @@ export default class Paths {
         return { filepath, chunkId }
 
     }
-
-    /*----------------------------------
-    - ALIAS
-    ----------------------------------*/
-
-    public aliases = {
-        client: new TsAlias(this.app.root + '/src/client'),
-        server: new TsAlias(this.app.root + '/src/server'),
-    }
-
-    public withAlias = (filename: string, side: TAppSide) => 
-        this.aliases[side].apply(filename);
-
-    public withoutAlias = (filename: string, side: TAppSide) => 
-        this.aliases[side].realpath(filename);
 
     public applyAliases() {
 

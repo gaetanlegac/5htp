@@ -1,6 +1,8 @@
 import { staticAssetName } from '../../../paths';
 
-module.exports = (dev: boolean, client: boolean) => ([
+import type App from '../../../app';
+
+module.exports = (app: App, dev: boolean, client: boolean) => ([
 
     // Allow to use ?raw at the end of the module path to iport the raw content only
     // Example: import VisualParserSource from './Parsers/visual.js?raw';
