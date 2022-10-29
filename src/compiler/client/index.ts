@@ -54,7 +54,7 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
     const { aliases } = app.aliases.client.forWebpack(app.paths.root + '/node_modules');
     // Disable access to server-side libs from client side
     delete aliases["@server"]; 
-    delete aliases["@/server"]; 
+    delete aliases["@/server"];
 
     const config: webpack.Configuration = {
 

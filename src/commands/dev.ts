@@ -36,9 +36,6 @@ export const run = () => new Promise<void>(async () => {
         }
     });
 
-    // Allow the dev servet to fetch the frameworg node modules
-    //fs.createSymlinkSync( cli.paths.core.cli + '/node_modules', app.paths.bin + '/node_modules', 'dir' );
-
     multiCompiler.watch({
 
         // https://webpack.js.org/configuration/watch/#watchoptions
