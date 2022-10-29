@@ -125,7 +125,9 @@ export default class Paths {
 
     public applyAliases() {
 
-        const aliases = new TsAlias( this.core.cli );
+        const aliases = new TsAlias({
+            rootDir: this.core.cli
+        });
 
         console.log('Applying Aliases ...', aliases);
 

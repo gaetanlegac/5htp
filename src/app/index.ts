@@ -32,7 +32,7 @@ export default class App {
         src: cli.paths.appRoot + '/src',
         bin: cli.paths.appRoot + '/bin',
         data: cli.paths.appRoot + '/var/data',
-        public: cli.paths.appRoot + '/bin/public',
+        public: cli.paths.appRoot + '/public',
         pages: cli.paths.appRoot + '/src/client/pages',
         cache: cli.paths.appRoot + '/src/.cache',
 
@@ -55,9 +55,21 @@ export default class App {
     ----------------------------------*/
 
     public aliases = {
-        client: new TsAlias(this.paths.root + '/src/client'),
-        server: new TsAlias(this.paths.root + '/src/server'),
+        client: new TsAlias({
+            rootDir: this.paths.root + '/src/client',
+            modulesDir: [ 
+                cli.paths.appRoot + '/node_modules',  
+                cli.paths.coreRoot + '/node_modules'
+            ],
+            debug: false
+        }),
+        server: new TsAlias({
+            rootDir: this.paths.root + '/src/server',
+            modulesDir: [ 
+                cli.paths.appRoot + '/node_modules',  
+                cli.paths.coreRoot + '/node_modules'
+            ],
+            debug: false
+        }),
     }
-
-    
 }
