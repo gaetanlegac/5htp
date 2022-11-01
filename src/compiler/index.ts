@@ -14,7 +14,6 @@ const smp = new SpeedMeasurePlugin({ disable: true });
 import createServerConfig from './server';
 import createClientConfig from './client';
 import { TCompileMode } from './common';
-import cli from '../';
 
 // types
 
@@ -40,11 +39,20 @@ export default async function createCompilers(
     fs.emptyDirSync( app.paths.bin );
     fs.ensureDirSync( path.join(app.paths.bin, 'public') )
     const publicFiles = fs.readdirSync(app.paths.public);
-    for (const publicFile of publicFiles)
-        fs.symlinkSync( 
-            path.join(app.paths.public, publicFile), 
-            path.join(app.paths.bin, 'public', publicFile) 
-        );
+    for (const publicFile of publicFiles) {
+        // Dev: faster to use symlink
+        if (mode === 'dev')
+            fs.symlinkSync( 
+                path.join(app.paths.public, publicFile), 
+                path.join(app.paths.bin, 'public', publicFile) 
+            );
+        // Prod: Symlink not always supported by CI / Containers solutions
+        else
+            fs.copySync( 
+                path.join(app.paths.public, publicFile), 
+                path.join(app.paths.bin, 'public', publicFile) 
+            );
+    }
 
     // When the 5htp package is installed from npm link,
     // Modules are installed locally and not glbally as with with the 5htp package from NPM.
