@@ -57,6 +57,7 @@ export default async function createCompilers(
     // When the 5htp package is installed from npm link,
     // Modules are installed locally and not glbally as with with the 5htp package from NPM.
     // So we need to symbilnk the http-core node_modules in one of the parents of server.js.
+    // It avoids errors like: "Error: Cannot find module 'intl'"
     fs.symlinkSync( 
         path.join(app.paths.root, '/node_modules/5htp-core/node_modules'), 
         path.join(app.paths.bin, '/node_modules') 
