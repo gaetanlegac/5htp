@@ -5,7 +5,7 @@ import type App from '../../../app';
 module.exports = (app: App, dev: boolean, client: boolean): webpack.RuleSetRule[] => {
 
     return [{
-        test: /\.(bmp|gif|jpg|jpeg|png|ico|svg)$/,
+        test: /\.(bmp|gif|jpg|jpeg|png|ico|svg|webp)$/,
         type: 'asset',
         parser: {
             dataUrlCondition: {
