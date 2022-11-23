@@ -4,6 +4,7 @@
 
 // Npm
 import webpack from 'webpack';
+import fs from 'fs-extra';
 
 // Minimizers
 const TerserPlugin = require("terser-webpack-plugin");
@@ -15,6 +16,23 @@ import createCommonConfig, { TCompileMode, regex } from '../common';
 
 // Type
 import type App from '../../app';
+
+const getCorePluginsList = (app: App,) => {
+
+    const corePlugins: string[] = [];
+
+    if (fs.existsSync( app.paths.root + '/node_modules' ))
+        for (const moduleName of fs.readdirSync( app.paths.root + '/node_modules' ))
+            if (moduleName.startsWith('5htp-'))
+                corePlugins.push(app.paths.root + '/node_modules/' + moduleName + '/src');
+
+    if (fs.existsSync( cli.paths.core.root + '/node_modules' ))
+        for (const moduleName of fs.readdirSync( cli.paths.core.root+ '/node_modules' ))
+            if (moduleName.startsWith('5htp-'))
+                corePlugins.push(cli.paths.core.root + '/node_modules/' + moduleName + '/src');
+
+    return corePlugins;
+}
 
 /*----------------------------------
 - CONFIG
@@ -70,11 +88,14 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
             function ({ request }, callback) {
 
                 const shouldCompile = request !== undefined && (
-                    request[0] === '.'
+                    // Local files
+                    request[0] === '.' || request[0] === '/'
                     ||
-                    request[0] === '/'
-                    ||
+                    // Aliased modules
                     app.aliases.server.containsAlias(request)
+                    ||
+                    // Compile 5HTP modules
+                    request.startsWith('5htp-')
                 )
 
                 //console.log('isNodeModule', request, isNodeModule);
@@ -119,7 +140,10 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
 
                         // Dossiers server uniquement pour le bundle server
                         app.paths.root + '/src/server',
-                        cli.paths.core.root + '/src/server'
+                        cli.paths.core.root + '/src/server',
+
+                        // Complle 5HTP modules so they can refer to the framework instance and aliases
+                        ...getCorePluginsList(app)
                     ],
                     rules: require('../common/babel')(app, 'server', dev)
                 }, 
