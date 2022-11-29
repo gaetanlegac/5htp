@@ -101,6 +101,7 @@ export default async function createCompilers(
             const time = timeEnd.getTime() - timeStart.getTime();
             if (stats.hasErrors()) {
                 console.error(`############## Failed to compile '${name}' after ${time} ms`);
+                process.exit(0);
             } else {
                 console.info(`############## [${name}] Finished compilation after ${time} ms`);
             }
