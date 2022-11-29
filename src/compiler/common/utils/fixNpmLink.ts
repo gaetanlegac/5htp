@@ -42,5 +42,5 @@ export const fixNpmLinkIssues = ( app: App ) => {
     if (!fs.existsSync( preactAppModule ))
         fs.symlinkSync( preactCoreModule, preactAppModule );
     if (!fs.existsSync( reactAppModule ))
-        fs.symlinkSync( preactCoreModule, reactAppModule );
+        fs.symlinkSync( path.join(preactCoreModule, 'compat'), reactAppModule );
 }
