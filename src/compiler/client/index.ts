@@ -51,11 +51,15 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
         );*/
 
     // Convert tsconfig cli.paths to webpack aliases
-    const { aliases } = app.aliases.client.forWebpack(app.paths.root + '/node_modules');
-    // Disable access to server-side libs from client side
+    const { aliases } = app.aliases.client.forWebpack({
+        modulesPath: app.paths.root + '/node_modules'
+    });
+
+    // We're not supposed in any case to import server libs from client
     delete aliases["@server"]; 
     delete aliases["@/server"];
 
+    console.log("client aliases", aliases);
     const config: webpack.Configuration = {
 
         ...commonConfig,
@@ -69,7 +73,7 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                     // https://github.com/webpack-contrib/webpack-hot-middleware#config
                     cli.paths.core.root + '/node_modules' + '/webpack-hot-middleware/client?name=client&reload=true',
                 ] : []),*/
-                cli.paths.core.root + '/src/client/index.tsx'
+                cli.paths.core.root + '/src/client/index.ts'
             ]
         },
 

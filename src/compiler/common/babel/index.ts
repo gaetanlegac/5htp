@@ -9,16 +9,9 @@ import * as types from '@babel/types'
 
 // Core
 import PluginIndexage from '../plugins/indexage';
-import BabelGlobImports from './plugins/importations';
 
 import cli from '@cli';
 import type { TAppSide, default as App } from '@cli/app';
-
-// Const
-const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-// Resources
-const routesToPreload = require( cli.paths.appRoot + '/src/client/pages/preload.json' );
 
 /*----------------------------------
 - REGLES
@@ -91,7 +84,6 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
                 // NOTE: On résoud les plugins et presets directement ici
                 //      Autrement, babel-loader les cherchera dans projet/node_modules
 
-
                 [require("@babel/plugin-proposal-decorators"), { "legacy": true }],
 
                 [require('@babel/plugin-proposal-class-properties'), { "loose": true }],
@@ -104,6 +96,8 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
                 ...(dev ? [
 
                     ...(side === 'client' ? [
+
+                        [require("@babel/plugin-transform-react-jsx-source"), {}],
 
                         // HMR Preact avec support des hooks
                         //['@prefresh/babel-plugin'],
@@ -131,138 +125,44 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
                     }]
                 ]),
 
-                BabelGlobImports({ 
+                //require("./plugins/pages")({ side }),
+
+                require('./routes/routes')({ side, app }),
+
+                ...(side === 'client' ? [] : [
+
+                    // Dependancies injection
+                    //require('./plugins/services')({ side }),
+
+                ]),
+
+                // Allow to import multiple fiels with one import statement thanks to glob patterns
+                require('babel-plugin-glob-import')({ 
                     debug: false,
                     removeAliases: (source: string) => app.paths.withoutAlias(source, side)
-                }, [{
-                    test: (request) => {
-                        if (request.source === '@models') {
-                            request.source = app.paths.src + '/server/models/**/*.ts';
-                            return true;
-                        }
-                        return false;
-                    },
-                    replace: (request, matches, t) => {
-                        // Preserve default behavior
-                    }
-                }, {
-                    test: (request) => (
-                        side === 'client'
-                        &&
-                        (
-                            request.source === '@/client/pages/**/*.tsx' 
-                            || 
-                            request.source === '@client/pages/**/*.tsx'
-                        )
-                        &&
-                        request.type === 'import'
-                    ),
-                    replace: (request, matches, t) => {
-
-                        if (!('default' in request) || request.default === undefined)
-                            return;
-
-                        const imports: types.ImportDeclaration[] = [];
-
-                        // const routes = {
-                        //    <chunkId1>: () => import(/* webpackChunkName: '<chunkId>' */ "<file>"),
-                        //    <chunkId2>: () => require("<file>").default,
-                        // }
-
-                        const pageLoaders: types.ObjectProperty[] = [];
-                        for (const file of matches) {
-
-                            // Exclude layouts
-                            if (file.filename.includes("/_layout/")) {
-                                //console.log("Exclude", file, 'from pages loaders (its a layout)');
-                                continue;
-                            }
-
-                            // Excliude components
-                            const filename = path.basename( file.filename );
-                            if (alphabet.includes(filename[0]) && filename[0] === filename[0].toUpperCase()) {
-                                //console.log("Exclude", file, 'from pages loaders (its a component)');
-                                continue;
-                            }
-                                
-                            // Page config
-                            const { chunkId } = cli.paths.getPageChunk(app, file.filename);
-                            const preloadPage = routesToPreload.includes(chunkId);
-
-                            // Import type according to preloading option
-                            if (preloadPage) {
-
-                                // import <chunkId> from "<file>";
-                                imports.push(
-                                    t.importDeclaration(
-                                        [t.importDefaultSpecifier( t.identifier(chunkId) )],
-                                        t.stringLiteral(file.filename)
-                                    )
-                                );
-
-                                // { <chunkId>: <chunkId> }
-                                pageLoaders.push(
-                                    t.objectProperty( 
-                                        t.stringLiteral(chunkId),
-                                        t.identifier(chunkId)
-                                    )
-                                );
-
-                            } else {
-
-                                // <chunkId>: () => ...
-                                pageLoaders.push( 
-                                    t.objectProperty( 
-                                        
-                                        t.stringLiteral(chunkId),
-                                        // () => import(/* webpackChunkName: '<chunkId>' */ "<file>")
-                                        t.arrowFunctionExpression([], t.callExpression(
-
-                                            t.import(), [t.addComment(
-                                                t.stringLiteral(file.filename),
-                                                "leading",
-                                                "webpackChunkName: '" + chunkId + "'"
-                                            )]
-                                        ))
-                                    )
-                                )
-                            }
-                        }
-
-                        return [
-                            ...imports,
-                            // const routes = { ... }
-                            t.variableDeclaration("const", [t.variableDeclarator(
-                                t.identifier(request.default),
-                                t.objectExpression(pageLoaders)
-                            )])
-                        ]
-
-                    }
-                }])
-
+                }, [
+                    // Routes imports on frontend side
+                    require('./routes/imports')(app, side, dev)
+                ])
             ],
 
             overrides: [
 
-                require("./plugins/pages")({ side }),
-
-                require("./plugins/models")({ side }),
-                
                 require('./plugins/icones-svg'),
                 
-                require('./plugins/form'),
+                // Universal forms
+                //require('./plugins/form'),
 
-                /*
-                
+                // Generate typing from sequelize model declaration
+                //require("./plugins/models")({ side }),
+
                 ...(side === 'client' ? [
 
                 ] : [
-                    require('./plugins/queries');
-                    require('./plugins/injection-dependances'),
-                ]),
 
-                */
+                    //require('./plugins/queries'),
+                    //require('./plugins/injection-dependances'),
+                ]),
             ]
         }
     }]

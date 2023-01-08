@@ -43,11 +43,16 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
     const dev = mode === 'dev';
 
     const commonConfig = createCommonConfig(app, 'server', mode);
-    const { aliases } = app.aliases.server.forWebpack(app.paths.root + '/node_modules');
+    const { aliases } = app.aliases.server.forWebpack({
+        modulesPath: app.paths.root + '/node_modules'
+    });
+
+    // We're not supposed in any case to import client services from server
+    delete aliases["@client/services"]; 
+    delete aliases["@/client/services"];
 
     console.log(`[${mode}] node_modules dirs:`, commonConfig.resolveLoader?.modules,
-        '\nModule aliases:', aliases);
-        
+        '\nModule aliases for webpack:', aliases);
     const config: webpack.Configuration = {
 
         ...commonConfig,
@@ -56,7 +61,7 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
         target: 'node',
         entry: {
             server: [
-                app.paths.root + '/src/server/index.ts',
+                cli.paths.coreRoot + '/src/server/index.ts'
             ],
         },
 
@@ -115,10 +120,7 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
 
             ...commonConfig.resolve,
 
-            alias: {
-                ...aliases,
-                "@root": app.paths.root,
-            },
+            alias: aliases,
 
             extensions: ['.ts', '.tsx', ".json", ".sql"],
         },

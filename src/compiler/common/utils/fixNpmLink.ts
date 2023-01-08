@@ -20,7 +20,7 @@ export const fixNpmLinkIssues = ( app: App ) => {
 
     const corePath = path.join(app.paths.root, '/node_modules/5htp-core');
     if (!fs.lstatSync( corePath ).isSymbolicLink())
-        return;
+        return console.info("Not fixing npm issue because 5htp-core wasn't installed with npm link.");
 
     console.info(`Fix NPM link issues ...`);
 

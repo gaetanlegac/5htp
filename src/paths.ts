@@ -6,6 +6,7 @@
 import path from 'path';
 import TsAlias from 'ts-alias';
 import moduleAlias from 'module-alias';
+import { filenameToImportName } from 'babel-plugin-glob-import';
 
 // Core
 
@@ -15,6 +16,13 @@ import moduleAlias from 'module-alias';
 
 import type App from './app';
 import type { TAppSide } from './app';
+
+export type TPathInfosOptions = {
+    basePath?: string,
+    shortenExtensions: string[],
+    // Indexed will be trimed only when the extension can be shorten
+    trimIndex: boolean,
+}
 
 export type TPathInfos = {
 
@@ -28,7 +36,16 @@ export type TPathInfos = {
     isIndex: boolean
 }
 
+/*----------------------------------
+- CONFIG
+----------------------------------*/
+
 export const staticAssetName = /*isDebug ? '[name].[ext].[hash:8]' :*/ '[hash:8][ext]';
+
+const pathInfosDefaultOpts = {
+    shortenExtensions: ['ts', 'js', 'tsx', 'jsx'],
+    trimIndex: true,
+}
 
 /*----------------------------------
 - LIB
@@ -57,18 +74,20 @@ export default class Paths {
     - EXTRACTION
     ----------------------------------*/
 
-    public infos(filename: string, basePath?: string, side: TAppSide = 'server'): TPathInfos {
+    public infos(filename: string, givenOpts: Partial<TPathInfosOptions> = {}): TPathInfos {
+
+        const opts: TPathInfosOptions = { ...pathInfosDefaultOpts, ...givenOpts }
 
         // Extraction élements du chemin
         const decomp = filename.split('/')
         let [nomFichier, extension] = (decomp.pop() as string).split('.');
-        const raccourcir = ['ts', 'js', 'tsx', 'jsx'].includes(extension);
+        const shortenExtension = opts.shortenExtensions && opts.shortenExtensions.includes(extension);
 
         // Vire l'index
         const isIndex = nomFichier === 'index'
         let cheminAbsolu: string;
         let nomReel: string;
-        if (isIndex && raccourcir) {
+        if (isIndex && shortenExtension && opts.trimIndex) {
             cheminAbsolu = decomp.join('/');
             nomReel = decomp.pop() as string;
         } else {
@@ -77,12 +96,12 @@ export default class Paths {
         }
 
         // Conserve l'extension si nécessaire
-        if (!raccourcir)
+        if (!shortenExtension)
             cheminAbsolu += '.' + extension;
 
-        const relative = basePath === undefined 
+        const relative = opts.basePath === undefined 
             ? ''
-            : cheminAbsolu.substring( basePath.length + 1 )
+            : cheminAbsolu.substring( opts.basePath.length + 1 )
 
         // Retour
         const retour = {
@@ -104,16 +123,17 @@ export default class Paths {
 
     public getPageChunk( app: App, file: string ) {
 
-        const infos = this.infos( file, file.startsWith( app.paths.pages ) 
-            ? app.paths.pages 
-            : this.core.pages,
-        );
+        const infos = this.infos( file, {
+            basePath: file.startsWith( app.paths.pages ) ? app.paths.pages : this.core.pages,
+            // Avoid potential conflicts between /landing.tsx and /landing/index.tsx
+            trimIndex: false,
+        });
 
         const filepath = infos.relative;
 
         // Before:  /home/.../src/client/pages/landing/index.tsx
         // After:   landing_index
-        let chunkId = filepath.replace(/\//g, '_');
+        let chunkId = filenameToImportName(filepath);
 
         // nsure it's non-empty
         if (chunkId.length === 0) // = /index.tsx

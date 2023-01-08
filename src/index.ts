@@ -19,6 +19,10 @@ type TCliCommand = () => Promise<{
     run: () => Promise<void> 
 }>
 
+type TArgsObject = {
+    [key: string]: string | boolean | string[]
+}
+
 /*----------------------------------
 - CLASSE
 ----------------------------------*/
@@ -28,7 +32,7 @@ type TCliCommand = () => Promise<{
 export class CLI {
 
     // Context
-    public args: TObjetDonnees = {};
+    public args: TArgsObject = {};
 
     public constructor(
         public paths = new Paths( process.cwd() )
@@ -98,7 +102,7 @@ export class CLI {
         this.runCommand(commandName, options);
     }
 
-    public async runCommand(command: string, args: TObjetDonnees) {
+    public async runCommand(command: string, args: TArgsObject) {
 
         this.args = args;
 

@@ -80,56 +80,21 @@ function Plugin(babel, { side }: TOptions) {
                 const replacement = t.callExpression( path.node.callee, [ routePath, ...routeArgs ]);
                 debug && console.log( generate(replacement).code );
 
+                path.replaceWith( replacement );
+
                 // Force export default
-                if (path.parent.type === 'ExportDefaultDeclaration')
+                // NOTE: now done by app-import.ts
+                /*if (path.parent.type === 'ExportDefaultDeclaration')
                     path.replaceWith( replacement );
                 else
                     path.parentPath.replaceWith(
                         t.exportDefaultDeclaration( replacement )
-                    )
+                    )*/
                 
             }
            
         }
     };
-
-    function addChunkId( 
-        routeArgs: types.CallExpression["arguments"],
-        filename: string
-    ): void | 'ALREADY_PROCESSED' {
-
-        if (routeArgs[0].type === 'ObjectExpression') {
-
-            if (routeArgs[0].properties.some(o =>
-                o.type === 'ObjectProperty'
-                &&
-                o.key.type === 'Identifier'
-                &&
-                o.key.name === 'id'
-            )) {
-                debug && console.log(`[routes]`, filename, 'Already Processed');
-                return 'ALREADY_PROCESSED';
-            }
-
-        } else
-            routeArgs.unshift(t.objectExpression([]));
-
-        const { filepath, chunkId } = cli.paths.getPageChunk(app, filename);
-        debug && console.log(`[routes]`, filename, '=>', chunkId);
-
-        // Add object property
-        (routeArgs[0] as types.ObjectExpression).properties.push(
-            t.objectProperty(
-                t.identifier('id'),
-                t.stringLiteral(chunkId)
-            ),
-            t.objectProperty(
-                t.identifier('filepath'),
-                t.stringLiteral(filepath)
-            )
-        );
-
-    }
 
     function addRendererContext( 
         routeArgs: types.CallExpression["arguments"],
@@ -175,7 +140,7 @@ function Plugin(babel, { side }: TOptions) {
                 'body',
                 t.importDeclaration(
                     [t.importDefaultSpecifier(t.identifier('useContext'))],
-                    t.stringLiteral('@client/context')
+                    t.stringLiteral('@/client/context')
                 )
             );
         }
