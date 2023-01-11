@@ -1,8 +1,17 @@
-# 5-HTP Framework
+# 5HTP Framework
 
 Opinionated, Lightweight & Full Stack Typescript framework, designed for productivity, modularity and performance.
 
-**/!\ This is a side-project. I cannot guarantee the maintenance.**
+## Features
+
+* Fully written in **Typescript**
+* Services management system
+* **Preact** with built-in SSR support
+* Highly convenient **MySQL client**
+* Universal schema / forms **validator**
+* Ful stack router
+* Cache system
+* And more
 
 ## Get Started
 
@@ -24,7 +33,17 @@ Opinionated, Lightweight & Full Stack Typescript framework, designed for product
 
 ## To be done:
 
-- Fix Typescript errors
-- Improve stability
-- Improve modularity
-- Make it less opinionated
+[] Update templates & documentation
+[] Improved debugability & debug tools
+    - Cleaner logs (tweak ts-logs settings)
+    - Cleaner stacktraces
+    - export all default exports as classical functions instead of arrow funcs
+[] Automatically generates types that associate api routes urls to their return types
+[] Fix forms system
+[] Allow to create CLI apps
+[] Debugging / Monitoring UI
+    - Admin dashboard
+[] Fix Typescript errors
+[] Completely replace expressjs
+[] Improve stability
+[] Improve modularity
