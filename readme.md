@@ -40,17 +40,17 @@ Full Stack Typescript framework designed for **developers and users experience**
 
 ## To be done:
 
-[] Update templates & documentation
-[] Improved debugability & debug tools
+- [ ] Update templates & documentation
+- [ ] Improved debugability & debug tools
     - Cleaner logs (tweak ts-logs settings)
     - Cleaner stacktraces
     - export all default exports as classical functions instead of arrow funcs
-[] Automatically generates types that associate api routes urls to their return types
-[] Fix forms system
-[] Allow to create CLI apps
-[] Debugging / Monitoring UI
+- [ ] Automatically generates types that associate api routes urls to their return types
+- [ ] Fix forms system
+- [ ] Allow to create CLI apps
+- [ ] Debugging / Monitoring UI
     - Admin dashboard
-[] Fix Typescript errors
-[] Completely replace expressjs
-[] Improve stability
-[] Improve modularity
+- [ ] Fix Typescript errors
+- [ ] Completely replace expressjs
+- [ ] Improve stability
+- [ ] Improve modularity
