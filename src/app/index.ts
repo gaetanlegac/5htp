@@ -26,7 +26,7 @@ export default class App {
     // config
     // WARNING: High level config files (env and services) shouldn't be loaded from the CLI
     //  The CLI will be run on CircleCI, and no env file should be sent to this service
-    public identity!: Config.Identity;
+    public identity: Config.Identity;
 
     public paths = {
         root: cli.paths.appRoot,
