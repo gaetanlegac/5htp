@@ -76,6 +76,7 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
                 // https://github.com/babel/babel/tree/master/packages/babel-preset-react
                 [require('@babel/preset-react'), {
                     //pragma: "h"
+                    development: dev
                 }],
 
             ],
@@ -96,11 +97,7 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
                 ...(dev ? [
 
                     ...(side === 'client' ? [
-
-                        [require("@babel/plugin-transform-react-jsx-source"), {}],
-
-                        // HMR Preact avec support des hooks
-                        //['@prefresh/babel-plugin'],
+                        
 
                     ] : [])
 
