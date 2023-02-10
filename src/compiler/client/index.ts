@@ -29,6 +29,8 @@ import cli from '../..';
 // Type
 import type App from '../../app';
 
+const debug = false;
+
 /*----------------------------------
 - CONFIG
 ----------------------------------*/
@@ -59,7 +61,7 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
     delete aliases["@server"]; 
     delete aliases["@/server"];
 
-    console.log("client aliases", aliases);
+    debug && console.log("client aliases", aliases);
     const config: webpack.Configuration = {
 
         ...commonConfig,

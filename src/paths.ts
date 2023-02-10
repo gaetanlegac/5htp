@@ -132,7 +132,7 @@ export default class Paths {
         const filepath = infos.relative;
 
         // Before:  /home/.../src/client/pages/landing/index.tsx
-        // After:   landing_index
+        // After:   landing
         let chunkId = filenameToImportName(filepath);
 
         // nsure it's non-empty
@@ -149,8 +149,7 @@ export default class Paths {
             rootDir: this.core.cli
         });
 
-        console.log('Applying Aliases ...', aliases);
-
+        //console.log('Applying Aliases ...', aliases);
         moduleAlias.addAliases( aliases.forModuleAlias() );
 
     }

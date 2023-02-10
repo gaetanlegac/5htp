@@ -26,7 +26,7 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 module.exports = (app: App, side: TAppSide, dev: boolean): ImportTransformer => ({
 
-    debug: true,
+    debug: false,
 
     test: (request) => (
         side === 'client'

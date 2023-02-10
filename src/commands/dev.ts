@@ -26,7 +26,6 @@ export const run = () => new Promise<void>(async () => {
     const multiCompiler = await createCompilers(app, 'dev', {
         before: () => {
 
-            console.log('before');
             stopApp();
 
         }, 

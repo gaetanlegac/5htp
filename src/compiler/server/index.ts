@@ -34,12 +34,14 @@ const getCorePluginsList = (app: App,) => {
     return corePlugins;
 }
 
+const debug = false;
+
 /*----------------------------------
 - CONFIG
 ----------------------------------*/
 export default function createCompiler( app: App, mode: TCompileMode ): webpack.Configuration {
 
-    console.info(`Creating compiler for server (${mode}).`);
+    debug && console.info(`Creating compiler for server (${mode}).`);
     const dev = mode === 'dev';
 
     const commonConfig = createCommonConfig(app, 'server', mode);
@@ -51,7 +53,7 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
     delete aliases["@client/services"]; 
     delete aliases["@/client/services"];
 
-    console.log(`[${mode}] node_modules dirs:`, commonConfig.resolveLoader?.modules,
+    debug && console.log(`[${mode}] node_modules dirs:`, commonConfig.resolveLoader?.modules,
         '\nModule aliases for webpack:', aliases);
     const config: webpack.Configuration = {
 
