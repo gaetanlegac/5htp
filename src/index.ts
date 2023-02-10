@@ -37,6 +37,7 @@ export class CLI {
     public constructor(
         public paths = new Paths( process.cwd() )
     ) {
+        console.log(`[cli] 5HTP CLI`, process.env.npm_package_version);
         console.log(`[cli] Start debugger ...`);
         new Logger({ name: "cli", overwriteConsole: true });
 
