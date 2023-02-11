@@ -17,19 +17,19 @@ import App, { TAppSide } from '../../../../app';
 
 type TOptions = {
     side: TAppSide,
-    app: App
+    app: App,
+    debug?: boolean
 }
 
 module.exports = (options: TOptions) => (
     [Plugin, options]
 )
 
-const debug = true;
 
 /*----------------------------------
 - PLUGIN
 ----------------------------------*/
-function Plugin(babel, { app, side }: TOptions) {
+function Plugin(babel, { app, side, debug }: TOptions) {
 
     const t = babel.types as typeof types;
 

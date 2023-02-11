@@ -86,7 +86,7 @@ export default async function createCompilers(
             compiling[name] = new Promise((resolve) => finished = resolve);
 
             timeStart = new Date();
-            console.info(`[${name}] ########## Compiling ...`);
+            console.info(`[${name}] Compiling ...`);
         });
 
         /* TODO: Ne pas résoudre la promise tant que la recompilation des données indexées (icones, identité, ...) 
@@ -100,7 +100,7 @@ export default async function createCompilers(
             const timeEnd = new Date();
             const time = timeEnd.getTime() - timeStart.getTime();
             if (stats.hasErrors()) {
-                console.error(`############## Failed to compile '${name}' after ${time} ms`);
+                console.error(`[${name}] Failed to compile after ${time} ms`);
 
                 // Exit process with code 0, so the CI container can understand building failed
                 // Only in prod, because in dev, we want the compiler watcher continue running
@@ -108,7 +108,7 @@ export default async function createCompilers(
                     process.exit(0);
 
             } else {
-                console.info(`############## [${name}] Finished compilation after ${time} ms`);
+                console.info(`[${name}] Finished compilation after ${time} ms`);
             }
 
             // Mark as finished

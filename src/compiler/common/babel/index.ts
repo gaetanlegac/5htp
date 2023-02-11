@@ -124,7 +124,7 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
 
                 //require("./plugins/pages")({ side }),
 
-                require('./routes/routes')({ side, app }),
+                require('./routes/routes')({ side, app, debug: false }),
 
                 ...(side === 'client' ? [] : [
 
