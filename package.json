@@ -1,7 +1,7 @@
 {
 	"name": "5htp",
 	"description": "Convenient TypeScript framework designed for Performance and Productivity.",
-	"version": "0.2.2-1",
+	"version": "0.2.3",
 	"author": "Gaetan Le Gac (https://github.com/gaetanlegac)",
 	"repository": "git://github.com/gaetanlegac/5htp.git",
 	"license": "MIT",
@@ -71,7 +71,7 @@
 		"replace-once": "^1.0.0",
 		"speed-measure-webpack-plugin": "^1.5.0",
 		"terser-webpack-plugin": "^5.2.4",
-		"ts-alias": "^0.0.6",
+		"ts-alias": "^0.0.7",
 		"ts-node": "^10.9.1",
 		"tslog": "^3.3.4",
 		"webfont": "^11.2.26",
