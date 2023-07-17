@@ -9,7 +9,7 @@ import generate from '@babel/generator';
 
 // Core
 import cli from '@cli';
-import App, { TAppSide } from '../../../../app';
+import { App, TAppSide } from '../../../../app';
 
 /*----------------------------------
 - WEBPACK RULE
@@ -24,7 +24,6 @@ type TOptions = {
 module.exports = (options: TOptions) => (
     [Plugin, options]
 )
-
 
 /*----------------------------------
 - PLUGIN
@@ -41,7 +40,8 @@ function Plugin(babel, { app, side, debug }: TOptions) {
     const plugin: PluginObj<{ 
 
         filename: string,
-        fileType: 'front' | 'back',
+        part: 'routes',
+        side: 'front' | 'back',
         processFile: boolean,
 
         // Identifier => Name
@@ -52,30 +52,44 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
             this.filename = state.opts.filename as string;
             this.processFile = true;
+
+            // Relative path
+            let relativeFileName: string | undefined;
+            if (this.filename.startsWith( cli.paths.appRoot ))
+                relativeFileName = this.filename.substring( cli.paths.appRoot.length );
+            if (this.filename.startsWith( cli.paths.coreRoot ))
+                relativeFileName = this.filename.substring( cli.paths.coreRoot.length );
+            if (this.filename.startsWith('/node_modules/5htp-core/'))
+                relativeFileName = this.filename.substring( '/node_modules/5htp-core/'.length );
             
-            if (
-                this.filename.startsWith( cli.paths.appRoot + '/src/client/pages' )
-                ||
-                this.filename.startsWith( cli.paths.coreRoot + '/src/client/pages' )
-            ) {
-
-                this.fileType = 'front';
-
-            } else if (this.filename.startsWith( cli.paths.appRoot + '/src/server/routes' )) {
-
-                this.fileType = 'back';
+            // The file isn't a route definition
+            if (relativeFileName === undefined) {
+                this.processFile = false;
+                return false;
+            }
             
-            } else
+            // Differenciate back / front
+            if (relativeFileName.startsWith('/src/client/pages')) {
+
+                this.side = 'front';
+                this.part = 'routes';
+
+            } else if (relativeFileName.startsWith('/src/server/routes')) {
+
+                this.side = 'back';
+                this.part = 'routes';
+
+             } else 
                 this.processFile = false;
 
+            // Init output
             this.importedServices = {}
             this.routeDefinitions = []
-
         },
         visitor: {
 
             // Find @app imports
-            // Test:            import { router } from '@app';
+            // Test:            import { Router } from '@app';
             // Replace by:      nothing
             ImportDeclaration(path) {
 
@@ -98,10 +112,11 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
                 // Remove this import
                 path.replaceWithMultiple([]);
+
             },
 
-            // Find router definitions
-            // Test:            router.xxx()
+            // Find Router definitions
+            // Test:            Router.xxx()
             // Replace by:      nothing
             CallExpression(path) {
 
@@ -131,7 +146,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
                 // Client route definition: Add chunk id
                 let [routePath, ...routeArgs] = path.node.arguments;
-                if (this.fileType === 'front' && callee.object.name === 'router') {
+                if (this.side === 'front' && callee.object.name === 'Router') {
 
                     // Inject chunk id in options (2nd arg)
                     const newRouteArgs = injectChunkId(routeArgs, this.filename);
@@ -160,21 +175,24 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
             // Wrap declarations into a exported const app function
             /*  
-                export const __register = ({ router }} => {
+                export const __register = ({ Router }} => {
 
-                    router.page(..)
+                    Router.page(..)
 
                 }
             */
             Program: {
                 exit: function(path, parent) {
 
+                    if (!this.processFile)
+                        return;
+
                     const importedServices = Object.entries(this.importedServices);
                     if (importedServices.length === 0)
                         return;
 
                     let exportValue: types.Expression | types.BlockStatement;
-                    if (this.fileType === 'front') {
+                    if (this.side === 'front') {
 
                         const routesDefCount = this.routeDefinitions.length;
                         if (routesDefCount !== 1)

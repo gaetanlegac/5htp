@@ -34,7 +34,7 @@ export default class IconesSVG extends Indexeur {
     private cacheTypes: string;
     private cacheIndex: string;
 
-    public constructor( app: App ) {
+    public constructor( app: App, private debug?: boolean ) {
         super();
 
         this.formats = ['woff2'];
@@ -46,18 +46,18 @@ export default class IconesSVG extends Indexeur {
 
         if (fs.existsSync(this.cacheIndex)) {
 
-            console.log('[icones] Getting icons list from cache ...');
+            this.debug && console.log('[icones] Getting icons list from cache ...');
             this.iconesExistantes = fs.readJSONSync(this.cacheIndex);
 
         } else {
 
-            console.log('[icones] Référencement des icones existantes ...');
+            this.debug && console.log('[icones] Référencement des icones existantes ...');
             this.iconesExistantes = this.refExistant('');
             fs.outputJSONSync(this.cacheIndex, this.iconesExistantes);
 
         }
 
-        console.log('[icones] ' + this.iconesExistantes.length + ' icones référencées');
+        this.debug && console.log('[icones] ' + this.iconesExistantes.length + ' icones référencées');
     }
 
     private refExistant = (dir: string): string[] => {
@@ -121,7 +121,7 @@ export default class IconesSVG extends Indexeur {
             typeIcones.push('"' + icone.nom + '"');
         }
 
-        console.log('[icones] Création police avec ' + typeIcones.length +' icones ...');
+        this.debug && console.log('[icones] Création police avec ' + typeIcones.length +' icones ...');
         //console.log('[icones] Liste des icones rféérencées: ', cheminIcones);
 
         const optionsMetadata = {
@@ -170,13 +170,12 @@ export default class IconesSVG extends Indexeur {
 
                 });
             }
-        })
-            .catch(error => {
-                console.error("Erreur lors de la création de la police d'icones", error);
-                throw error;
-            });
+        }).catch(error => {
+            console.error("Erreur lors de la création de la police d'icones", error);
+            throw error;
+        });
 
-        console.log('[icones] Enregistrement de la police avec ' + typeIcones.length +' icones ...');
+        this.debug && console.log('[icones] Enregistrement de la police avec ' + typeIcones.length +' icones ...');
 
         // Enregistrement fichiers
         for (const format of this.formats)
@@ -185,7 +184,7 @@ export default class IconesSVG extends Indexeur {
 
         fs.outputFileSync(this.cacheTypes, 'export type TIcones = ' + typeIcones.join('|') );
 
-        console.log("[icones] Police enregistrée.");
+        this.debug && console.log("[icones] Police enregistrée.");
 
         return [
             /*{ 

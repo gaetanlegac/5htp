@@ -14,6 +14,9 @@
 import fs from 'fs-extra';
 import yaml from 'yaml';
 
+// Types
+import type { TEnvConfig } from '../../../core/src/server/app/container/config';
+
 /*----------------------------------
 - LOADE
 ----------------------------------*/
@@ -32,10 +35,9 @@ export default class ConfigParser {
         return yaml.parse(rawConfig);
     }
 
-    public env() {
+    public env(): TEnvConfig {
         // We assume that when we run 5htp dev, we're in local
         // Otherwise, we're in production environment (docker)
-        console.log("[cli] Using environment:", process.env.NODE_ENV);
         return process.env.NODE_ENV === 'development' ? {
             name: 'local',
             profile: 'dev',

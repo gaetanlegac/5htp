@@ -6,116 +6,236 @@
 import path from 'path';
 import webpack from 'webpack';
 import fs from 'fs-extra';
+import micromatch from 'micromatch';
+import moduleAlias from 'module-alias';
 
 import SpeedMeasurePlugin from "speed-measure-webpack-plugin";
 const smp = new SpeedMeasurePlugin({ disable: true });
 
 // Core
+import app from '../app';
+import cli from '..';
 import createServerConfig from './server';
 import createClientConfig from './client';
 import { TCompileMode } from './common';
-import { fixNpmLinkIssues } from './common/utils/fixNpmLink'; 
-
-// types
-import type App from '../app';
 
 type TCompilerCallback = () => void
 
 /*----------------------------------
 - FONCTION
 ----------------------------------*/
-export const compiling: { [compiler: string]: Promise<void> } = {};
+export default class Compiler {
 
-export default async function createCompilers( 
-    app: App,
-    mode: TCompileMode,
-    { before, after }: {
-        before?: TCompilerCallback,
-        after?: TCompilerCallback,
-    } = {}
-) {
+    public compiling: { [compiler: string]: Promise<void> } = {};     
 
-    // Cleanup
-    fs.emptyDirSync( app.paths.bin );
-    fs.ensureDirSync( path.join(app.paths.bin, 'public') )
-    const publicFiles = fs.readdirSync(app.paths.public);
-    for (const publicFile of publicFiles) {
-        // Dev: faster to use symlink
-        if (mode === 'dev')
-            fs.symlinkSync( 
-                path.join(app.paths.public, publicFile), 
-                path.join(app.paths.bin, 'public', publicFile) 
-            );
-        // Prod: Symlink not always supported by CI / Containers solutions
-        else
-            fs.copySync( 
-                path.join(app.paths.public, publicFile), 
-                path.join(app.paths.bin, 'public', publicFile) 
-            );
+    public constructor(
+        private mode: TCompileMode,
+        private callbacks: {
+            before?: TCompilerCallback,
+            after?: TCompilerCallback,
+        } = {},
+        private debug: boolean = false
+    ) {
+
     }
 
+    public cleanup() {
+
+        fs.emptyDirSync( app.paths.bin );
+        fs.ensureDirSync( path.join(app.paths.bin, 'public') )
+        const publicFiles = fs.readdirSync(app.paths.public);
+        for (const publicFile of publicFiles) {
+            // Dev: faster to use symlink
+            if (this.mode === 'dev')
+                fs.symlinkSync( 
+                    path.join(app.paths.public, publicFile), 
+                    path.join(app.paths.bin, 'public', publicFile) 
+                );
+            // Prod: Symlink not always supported by CI / Containers solutions
+            else
+                fs.copySync( 
+                    path.join(app.paths.public, publicFile), 
+                    path.join(app.paths.bin, 'public', publicFile) 
+                );
+        }
+    }
     /* FIX issue with npm link
         When we install a module with npm link, this module's deps are not installed in the parent project scope
         Which causes some issues:
         - The module's deps are not found by Typescript
         - Including React, so VSCode shows that JSX is missing
     */
-    fixNpmLinkIssues(app);
+    public fixNpmLinkIssues() {
+        const corePath = path.join(app.paths.root, '/node_modules/5htp-core');
+        if (!fs.lstatSync( corePath ).isSymbolicLink())
+            return console.info("Not fixing npm issue because 5htp-core wasn't installed with npm link.");
 
-    // Create compilers
-    const multiCompiler = webpack([
-        smp.wrap( createServerConfig(app, mode) ),
-        smp.wrap( createClientConfig(app, mode) )
-    ]);
+        this.debug && console.info(`Fix NPM link issues ...`);
 
-    for (const compiler of multiCompiler.compilers) {
+        const appModules = path.join(app.paths.root, 'node_modules');
+        const coreModules = path.join(corePath, 'node_modules');
 
-        const name = compiler.name;
-        if (name === undefined)
-            throw new Error(`A name must be specified to each compiler.`);
+        // When the 5htp package is installed from npm link,
+        // Modules are installed locally and not glbally as with with the 5htp package from NPM.
+        // So we need to symbilnk the http-core node_modules in one of the parents of server.js.
+        // It avoids errors like: "Error: Cannot find module 'intl'"
+        fs.symlinkSync( coreModules, path.join(app.paths.bin, 'node_modules') );
 
-        let timeStart = new Date();
+        // Same problem: when 5htp-core is installed via npm link, 
+        // Typescript doesn't detect React and shows mission JSX errors
+        const preactCoreModule = path.join(coreModules, 'preact');
+        const preactAppModule = path.join(appModules, 'preact');
+        const reactAppModule = path.join(appModules, 'react');
 
-        let finished: (() => void);
-        compiling[name] = new Promise((resolve) => finished = resolve);
-
-        compiler.hooks.compile.tap(name, () => {
-
-            before && before();
-
-            compiling[name] = new Promise((resolve) => finished = resolve);
-
-            timeStart = new Date();
-            console.info(`[${name}] Compiling ...`);
-        });
-
-        /* TODO: Ne pas résoudre la promise tant que la recompilation des données indexées (icones, identité, ...) 
-            n'a pas été achevée */
-        compiler.hooks.done.tap(name, stats => {
-
-            // Affiche les détails de la compilation
-            console.info(stats.toString(compiler.options.stats));
-
-            // Shiow status
-            const timeEnd = new Date();
-            const time = timeEnd.getTime() - timeStart.getTime();
-            if (stats.hasErrors()) {
-                console.error(`[${name}] Failed to compile after ${time} ms`);
-
-                // Exit process with code 0, so the CI container can understand building failed
-                // Only in prod, because in dev, we want the compiler watcher continue running
-                if (mode === 'prod')
-                    process.exit(0);
-
-            } else {
-                console.info(`[${name}] Finished compilation after ${time} ms`);
-            }
-
-            // Mark as finished
-            finished();
-            delete compiling[name];
-        });
+        if (!fs.existsSync( preactAppModule ))
+            fs.symlinkSync( preactCoreModule, preactAppModule );
+        if (!fs.existsSync( reactAppModule ))
+            fs.symlinkSync( path.join(preactCoreModule, 'compat'), reactAppModule );
     }
 
-    return multiCompiler;
+    private findServices( dir: string ) {
+        const files: string[] = [];
+        const dirents = fs.readdirSync(dir, { withFileTypes: true });
+        for (const dirent of dirents) {
+            const res = path.resolve(dir, dirent.name);
+            if (dirent.isDirectory()) {
+                files.push( ...this.findServices(res) );
+            } else if (dirent.name === 'service.json') {
+                files.push( path.dirname(res) );
+            }
+        }
+        return files;
+    }
+
+    private indexServices() {
+        
+        const imported: string[] = []
+        const exportedType: string[] = []
+        const exportedMetas: string[] = []
+
+        // Index services
+        const searchDirs = {
+            '@server/services': path.join(cli.paths.core.src, 'server', 'services'),
+            '@/server/services': path.join(app.paths.src, 'server', 'services'),
+            // TODO: node_modules
+        }
+
+        for (const importationPrefix in searchDirs) {
+
+            const searchDir = searchDirs[ importationPrefix ];
+            const services = this.findServices(searchDir);
+
+            for (const serviceDir of services) {
+
+                const metasFile = path.join( serviceDir, 'service.json');
+                const { id, name, parent, dependences } = require(metasFile);
+
+                const importationPath = importationPrefix + serviceDir.substring( searchDir.length );
+                
+                // Generate index & typings
+                imported.push(`import type ${name} from "${importationPath}";`);
+                exportedType.push(`'${id}': ${name},`);
+                // NOTE: only import enabled packages to optimize memory
+                // TODO: don't index non-setuped packages in the exported metas
+                exportedMetas.push(`'${id}': {
+class: () => require("${importationPath}"),
+id: "${id}",
+name: "${name}",
+parent: "${parent}",
+dependences: ${JSON.stringify(dependences)},
+                },`);
+            }
+        }
+
+        // Output the services index
+        fs.outputFileSync(
+            path.join( app.paths.server.generated, 'services.ts'),
+`${imported.join('\n')}
+export type Services = {
+    ${exportedType.join('\n')}
+}
+export default {
+    ${exportedMetas.join('\n')}
+}`
+        );
+
+        fs.outputFileSync(
+            path.join( app.paths.server.generated, 'services.d.ts'),
+`declare module "@app" {
+    type Services = import("./services").Services;
+    const ServerServices: Services & {
+        app: import('@server/app').Application<Services>
+    }
+    export = ServerServices
+}`
+        );
+    }
+
+    public async create() {
+
+        this.cleanup();
+
+        this.fixNpmLinkIssues();
+
+        this.indexServices();
+
+        // Create compilers
+        const multiCompiler = webpack([
+            smp.wrap( createServerConfig(app, this.mode) ),
+            smp.wrap( createClientConfig(app, this.mode) )
+        ]);
+
+        for (const compiler of multiCompiler.compilers) {
+
+            const name = compiler.name;
+            if (name === undefined)
+                throw new Error(`A name must be specified to each compiler.`);
+
+            let timeStart = new Date();
+
+            let finished: (() => void);
+            this.compiling[name] = new Promise((resolve) => finished = resolve);
+
+            compiler.hooks.compile.tap(name, () => {
+
+                this.callbacks.before && this.callbacks.before();
+
+                this.compiling[name] = new Promise((resolve) => finished = resolve);
+
+                timeStart = new Date();
+                console.info(`[${name}] Compiling ...`);
+            });
+
+            /* TODO: Ne pas résoudre la promise tant que la recompilation des données indexées (icones, identité, ...) 
+                n'a pas été achevée */
+            compiler.hooks.done.tap(name, stats => {
+
+                // Shiow status
+                const timeEnd = new Date();
+                const time = timeEnd.getTime() - timeStart.getTime();
+                if (stats.hasErrors()) {
+
+                    console.info(stats.toString(compiler.options.stats));
+                    console.error(`[${name}] Failed to compile after ${time} ms`);
+
+                    // Exit process with code 0, so the CI container can understand building failed
+                    // Only in prod, because in dev, we want the compiler watcher continue running
+                    if (this.mode === 'prod')
+                        process.exit(0);
+
+                } else {
+                    this.debug && console.info(stats.toString(compiler.options.stats));
+                    console.info(`[${name}] Finished compilation after ${time} ms`);
+                }
+
+                // Mark as finished
+                finished();
+                delete this.compiling[name];
+            });
+        }
+
+        return multiCompiler;
+
+    }
+
 }

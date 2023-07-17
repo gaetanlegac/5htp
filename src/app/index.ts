@@ -3,6 +3,7 @@
 ----------------------------------*/
 
 // npm
+import path from 'path';
 import TsAlias from 'ts-alias';
 
 // Cre
@@ -10,7 +11,7 @@ import cli from '..';
 
 // Specific
 import ConfigParser from './config';
-import type {  } from '../../../core/src/server/app/config';
+import type { TEnvConfig } from '../../../core/src/server/app/container/config';
 
 /*----------------------------------
 - TYPES
@@ -21,21 +22,32 @@ export type TAppSide = 'server' | 'client'
 /*----------------------------------
 - SERVICE
 ----------------------------------*/
-export default class App {
+export class App {
 
     // config
     // WARNING: High level config files (env and services) shouldn't be loaded from the CLI
     //  The CLI will be run on CircleCI, and no env file should be sent to this service
     public identity: Config.Identity;
 
+    public env: TEnvConfig;
+
     public paths = {
+
         root: cli.paths.appRoot,
-        src: cli.paths.appRoot + '/src',
-        bin: cli.paths.appRoot + '/bin',
-        data: cli.paths.appRoot + '/var/data',
-        public: cli.paths.appRoot + '/public',
-        pages: cli.paths.appRoot + '/src/client/pages',
-        cache: cli.paths.appRoot + '/src/.cache',
+        src: path.join( cli.paths.appRoot, 'src'),
+        bin: path.join( cli.paths.appRoot, 'bin'),
+        data: path.join( cli.paths.appRoot, 'var', 'data'),
+        public: path.join( cli.paths.appRoot, 'public'),
+        pages: path.join( cli.paths.appRoot, 'src', 'client', 'pages'),
+        cache: path.join( cli.paths.appRoot, 'src', '.cache'),
+
+        client: {
+            generated: path.join( cli.paths.appRoot, 'src', 'client', '.generated')
+        },
+        server: {
+            generated: path.join( cli.paths.appRoot, 'src', 'server', '.generated'),
+            configs: path.join( cli.paths.appRoot, 'src', 'server', 'app')
+        },
 
         withAlias: (filename: string, side: TAppSide) => 
             this.aliases[side].apply(filename),
@@ -46,9 +58,10 @@ export default class App {
 
     public constructor() {
         
-        console.log(`[cli] Loading app config ...`);
+        cli.debug && console.log(`[cli] Loading app config ...`);
         const configParser = new ConfigParser( cli.paths.appRoot );
         this.identity = configParser.identity();
+        this.env = configParser.env();
     }
 
     /*----------------------------------
@@ -74,3 +87,7 @@ export default class App {
         }),
     }
 }
+
+export const app = new App
+
+export default app

@@ -1,8 +1,10 @@
 import Indexeur from './indexeur';
 
-import { Compiler } from 'webpack';
+import { Compiler, NormalModule } from 'webpack';
 
 type TListeIndexeurs = {[nom: string]: Indexeur}
+
+const debug = false;
 
 export default class SelecteursApiPlugin {
 
@@ -21,14 +23,14 @@ export default class SelecteursApiPlugin {
         const nomCompileur = compiler.options.name;
 
         for (const nomIndexeur in this.indexeurs) {
-            console.log(`[indexage][${nomCompileur}][${nomIndexeur}] Init`);
+            debug && console.log(`[indexage][${nomCompileur}][${nomIndexeur}] Init`);
             this.indexeurs[nomIndexeur].Init();
         }
 
         compiler.hooks.compilation.tap("SelecteursApiPlugin", (compilation) => {
             //console.log("The compiler is starting a new compilation...");
 
-            compilation.hooks.normalModuleLoader.tap("SelecteursApiPlugin", (context, module) => {
+            NormalModule.getCompilationHooks(compilation).loader.tap("SelecteursApiPlugin", (context, module) => {
 
                 // Fonction de récupération des métadatas
                 context["metadataSelecteursApiPlugin"] = (metadata) => {
@@ -66,7 +68,7 @@ export default class SelecteursApiPlugin {
                     try {
                         if (this.indexeurs[nomIndexeur].derniereModif > this.indexeurs[nomIndexeur].derniereMaj) {
 
-                            console.log(`[indexage][${nomCompileur}][${nomIndexeur}] Enregistrement des modifications`);
+                            debug && console.log(`[indexage][${nomCompileur}][${nomIndexeur}] Enregistrement des modifications`);
 
                             this.indexeurs[nomIndexeur].derniereMaj = this.indexeurs[nomIndexeur].derniereModif;
                             const aEnregistrer = await this.indexeurs[nomIndexeur].Enregistrer();

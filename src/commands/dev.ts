@@ -11,19 +11,17 @@ import cli from '../';
 import Keyboard from '../utils/keyboard';
 
 // Configs
-import createCompilers, { compiling } from '../compiler';
+import Compiler from '../compiler';
 
 // Core
-import App from '../app';
+import { app, App } from '../app';
 
 /*----------------------------------
 - COMMANDE
 ----------------------------------*/
 export const run = () => new Promise<void>(async () => {
-    
-    const app = new App();
 
-    const multiCompiler = await createCompilers(app, 'dev', {
+    const compiler = new Compiler('dev', {
         before: () => {
 
             stopApp();
@@ -34,6 +32,8 @@ export const run = () => new Promise<void>(async () => {
 
         }
     });
+
+    const multiCompiler = await compiler.create();
 
     multiCompiler.watch({
 
@@ -60,8 +60,8 @@ export const run = () => new Promise<void>(async () => {
 
     Keyboard.input('ctrl+r', async () => {
 
-        console.log(`Waiting for compilers to be ready ...`, Object.keys(compiling));
-        await Promise.all(Object.values(compiling));
+        console.log(`Waiting for compilers to be ready ...`, Object.keys(compiler.compiling));
+        await Promise.all(Object.values(compiler.compiling));
 
         console.log(`Reloading app ...`);
         startApp(app);

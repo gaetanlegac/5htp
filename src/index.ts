@@ -1,11 +1,12 @@
 #!/usr/bin/env -S npx ts-node
 
+process.traceDeprecation = true;
+
 /*----------------------------------
 - DEPENDANCES
 ----------------------------------*/
 
 // Npm
-import { Logger } from "tslog";
 import cp from 'child_process';
 
 // Libs
@@ -33,15 +34,15 @@ export class CLI {
 
     // Context
     public args: TArgsObject = {};
+    
+    public debug: boolean = false;
 
     public constructor(
         public paths = new Paths( process.cwd() )
     ) {
-        console.log(`[cli] 5HTP CLI`, process.env.npm_package_version);
-        console.log(`[cli] Start debugger ...`);
-        new Logger({ name: "cli", overwriteConsole: true });
+        this.debug && console.log(`[cli] 5HTP CLI`, process.env.npm_package_version);
 
-        console.log(`[cli] Apply aliases ...`);
+        this.debug && console.log(`[cli] Apply aliases ...`);
         this.paths.applyAliases();
 
         this.start();
@@ -59,7 +60,7 @@ export class CLI {
     }
 
     public start() {
-
+        
         const [, , commandName, ...argv] = process.argv;
 
         if (this.commands[commandName] === undefined)
@@ -107,7 +108,7 @@ export class CLI {
 
         this.args = args;
 
-        console.info(`Running command ${command}`, this.args);
+        this.debug && console.info(`Running command ${command}`, this.args);
 
         // Check existance
         if (this.commands[command] === undefined)
@@ -118,7 +119,7 @@ export class CLI {
         // Running
         runner.run().then(() => {
 
-            console.info(`Command ${command} finished.`);
+            this.debug && console.info(`Command ${command} finished.`);
 
         }).catch((e) => {
 

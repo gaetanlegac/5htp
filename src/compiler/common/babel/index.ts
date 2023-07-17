@@ -128,8 +128,7 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
 
                 ...(side === 'client' ? [] : [
 
-                    // Dependancies injection
-                    //require('./plugins/services')({ side }),
+                    require('./plugins/services')({ side, app, debug: false }),
 
                 ]),
 

@@ -179,7 +179,7 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
         ],
 
         optimization: {
-            minimizer: [
+            minimizer: dev ? [] : [
                 new TerserPlugin({
                     terserOptions: {
                         // Consere les classnames
@@ -191,9 +191,9 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
         },
 
         // https://webpack.js.org/configuration/devtool/#devtool
-        devtool: /*dev 
+        devtool: dev 
             ? 'eval-source-map' // Recommended choice for development builds with high quality SourceMaps.
-            :*/ 'source-map', // Recommended choice for production builds with high quality SourceMaps.
+            : 'source-map', // Recommended choice for production builds with high quality SourceMaps.
 
             // eval-source-map n'est pas précis
         /*devServer: {

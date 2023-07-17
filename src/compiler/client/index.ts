@@ -178,7 +178,7 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                                 ...c.chunks.reduce(
                                     (files, cc) => [
                                         ...files,
-                                        ...cc.files.filter(fileFilter).map(addPath),
+                                        ...[...cc.files].filter(fileFilter).map(addPath),
                                     ],
                                     [],
                                 ),

@@ -14,7 +14,7 @@ import { filenameToImportName } from 'babel-plugin-glob-import';
 - TYPES
 ----------------------------------*/
 
-import type App from './app';
+import type { App } from './app';
 import type { TAppSide } from './app';
 
 export type TPathInfosOptions = {

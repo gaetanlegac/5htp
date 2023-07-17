@@ -4,157 +4,189 @@
 
 // Npm
 import * as types from '@babel/types'
-import type { PluginObj, NodePath } from '@babel/core';
-import generate from '@babel/generator';
+import type { PluginObj } from '@babel/core';
 
 // Core
 import cli from '@cli';
-import App, { TAppSide } from '../../../../app';
+import { App, TAppSide } from '../../../../app';
+
+const containerServices = [
+    'Environment',
+    'Application',
+    'Path',
+    'Services',
+    'Event'
+]
 
 /*----------------------------------
 - WEBPACK RULE
 ----------------------------------*/
 
 type TOptions = {
-    side: TAppSide
+    side: TAppSide,
+    app: App,
+    debug?: boolean
 }
 
-const filenamePrefix = cli.paths.appRoot + '/src/server/services';
-const processFile = (filename: string) => (
-    filename.startsWith( cli.paths.appRoot + '/src/server/services' )
-    | 
-    filename.startsWith( cli.paths.appRoot + '/src/server/routes' )
-)
+type TImportSource = 'container' | 'application';
 
 module.exports = (options: TOptions) => (
     [Plugin, options]
 )
 
-const debug = true;
 
 /*----------------------------------
 - PLUGIN
 ----------------------------------*/
-function Plugin(babel, { side }: TOptions) {
+function Plugin(babel, { app, side, debug }: TOptions) {
 
     const t = babel.types as typeof types;
-    let program: NodePath<types.Program>;
+
+    /*
+        - Wrap route.get(...) with (app: Application) => { }
+        - Inject chunk ID into client route options
+    */
 
     const plugin: PluginObj<{ 
 
-        filename: string,
+        debug: boolean,
 
-        appImport: string | null,
+        filename: string,
+        processFile: boolean,
 
         // Identifier => Name
-        importedServices: {[identifier: string]: string}
+        importedServicesCount: number,
+        importedServices: {
+            [local: string]: {
+                imported: string,
+                bindings: any, // TODO: Scope.Binding[] type
+                source: TImportSource
+            }
+        },
+        bySource: {[importSource in TImportSource] : number}
     }> = {
         pre(state) {
 
             this.filename = state.opts.filename as string;
+            this.processFile = this.filename.startsWith( cli.paths.appRoot + '/src/server' );
 
-            this.appImport = null
             this.importedServices = {}
+            this.bySource = {
+                container: 0,
+                application: 0
+            }
+            this.importedServicesCount = 0
+            this.debug = debug || false;
 
         },
         visitor: {
 
-            Program(path) {
-                program = path;
-            },
-
-            // Transform imports
+            // Find @app imports
+            // Test:            import { router } from '@app';
+            // Replace by:      nothing
             ImportDeclaration(path) {
 
-                if (!this.filename.startsWith( cli.paths.appRoot + '/src/server' ))
+                if (!this.processFile)
                     return;
                 
-                if (path.node.source.value !== '@server/app')
+                if (path.node.source.value !== '@app')
                     return;
-
-                const importedServices: { local: string, imported: string }[] = []
-                let appName: string = 'app';
 
                 for (const specifier of path.node.specifiers) {
-                    /*
-                        import app from '@server/app';
-                    */
-                    if (specifier.type === 'ImportDefaultSpecifier') {
+                    
+                    if (specifier.type !== 'ImportSpecifier')
+                        continue;
 
-                        appName = specifier.local.name;
+                    if (specifier.imported.type !== 'Identifier')
+                        continue;
 
-                    /*
-                        import { sql } from '@server/app';
-                        => 
-                        import app from '@server/app';
-                        app.use('sql');
-                    */
-                    } else if (specifier.type === 'ImportSpecifier') {
+                    this.importedServicesCount++;
 
-                        if (specifier.imported.type !== 'Identifier')
-                            continue;
+                    let importSource: TImportSource;
+                    if (containerServices.includes(specifier.imported.name))
+                        importSource = 'container';
+                    else
+                        importSource = 'application';
 
-                        importedServices.push({
-                            local: specifier.local.name,
-                            imported: specifier.imported.name
-                        });
-
-                    /*
-                        import * as templates from '@server/app';
-                        =>
-
-                    */
-                    } else if (specifier.type === 'ImportNamespaceSpecifier') {
-
-                        //importDefault = specifier.local.name;
-                        //importAll = true;
-
+                    this.importedServices[ specifier.local.name ] = {
+                        imported: specifier.imported.name,
+                        bindings: path.scope.bindings[ specifier.local.name ].referencePaths,
+                        source: importSource
                     }
+
+                    this.bySource[ importSource ]++;
                 }
 
-                // No service imported
-                // This verification avoids ininite loop
-                if (importedServices.length === 0)
-                    return;
+                // Replace by simple import 
+                this.debug && console.log("[babel][services] Replace importation");
+                const replaceWith: any[] = []
 
-                const replacements: types.Statement[] = [
-                    t.importDeclaration(
-                        [
-                            t.importDefaultSpecifier( t.identifier( appName )),
-                        ],
-                        t.stringLiteral('@server/app')
-                    )
-                ]
-
-                for (const { imported, local } of importedServices) {
-
-                    replacements.push(
-                        t.expressionStatement(
-                            t.callExpression(
-                                t.memberExpression(
-                                    t.identifier( appName ),
-                                    t.identifier('use')
-                                ),
-                                [
-                                    t.stringLiteral( imported )
-                                ]
-                            )
+                if (this.bySource.container > 0)
+                    replaceWith.push(
+                        t.importDeclaration(
+                            [t.importDefaultSpecifier( t.identifier('container') )],
+                            t.stringLiteral( cli.paths.core.src + '/server/app/container')
                         )
                     );
 
-                    this.importedServices[ local ] = imported;
-                }
+                if (this.bySource.application > 0)
+                    replaceWith.push(
+                        t.importDeclaration(
+                            [t.importDefaultSpecifier( t.identifier('application') )],
+                            t.stringLiteral( cli.paths.core.src + '/server/app/instance')
+                        )
+                    );
 
-                debug && console.log(`############ [compilation][babel][services] Remplacement: `, 
-                    generate(t.program(replacements)).code 
-                );
-
-                path.replaceWithMultiple(replacements);
+                path.replaceWithMultiple(replaceWith);
             },
 
-            // transform accesses
-            Identifier() {
-                
+            Identifier(path) {
+
+                if (!this.processFile || this.importedServicesCount === 0)
+                    return;
+
+                // Get service the identifier makes rfeerence to
+                const name = path.node.name;
+                const service = this.importedServices[ name ];
+                if (service === undefined)
+                    return;
+
+                // sometimes not iterable
+                if (!service.bindings)
+                    return;
+
+                // Replace by app.services.name
+                let serviceBinding: any;
+                for (const binding of service.bindings) {
+                    if (binding.replaced !== true && path.getPathLocation() === binding.getPathLocation()) {
+                        
+                        serviceBinding = binding;
+
+                        break;
+                    }
+                }
+
+                // This identifier is a binding to a service
+                if (serviceBinding === undefined)
+                    return;
+
+                // Replace to reference to app.services.serviceName
+                path.replaceWith(
+                    t.memberExpression(
+                        service.source === 'container'
+                            // container.Environment
+                            ? t.identifier( service.source )
+                            // application.services.Disks
+                            : t.memberExpression(
+                                t.identifier( service.source ),
+                                t.identifier('services'),
+                            ),
+                        path.node
+                    )
+                );
+
+                // Avoid circular loop
+                serviceBinding.replaced = true;
             }
         }
     }
