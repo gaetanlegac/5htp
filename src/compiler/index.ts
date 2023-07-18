@@ -151,6 +151,18 @@ dependences: ${JSON.stringify(dependences)},
 
         // Output the services index
         fs.outputFileSync(
+            path.join( app.paths.client.generated, 'services.d.ts'),
+`declare module "@app" {
+
+    import { CrossPathClient } from '@/client/index';
+
+    const appClass: CrossPathClient;
+
+    export = appClass
+}`
+        );
+
+        fs.outputFileSync(
             path.join( app.paths.server.generated, 'services.ts'),
 `${imported.join('\n')}
 export type Services = {
