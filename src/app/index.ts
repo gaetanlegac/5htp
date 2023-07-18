@@ -56,6 +56,15 @@ export class App {
             this.aliases[side].realpath(filename),
     }
 
+    public containerServices = [
+        'Services',
+        'Environment',
+        'Identity',
+        /*'Application',
+        'Path',
+        'Event'*/
+    ]
+
     public constructor() {
         
         cli.debug && console.log(`[cli] Loading app config ...`);

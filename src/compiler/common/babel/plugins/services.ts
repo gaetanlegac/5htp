@@ -10,14 +10,6 @@ import type { PluginObj } from '@babel/core';
 import cli from '@cli';
 import { App, TAppSide } from '../../../../app';
 
-const containerServices = [
-    'Environment',
-    'Application',
-    'Path',
-    'Services',
-    'Event'
-]
-
 /*----------------------------------
 - WEBPACK RULE
 ----------------------------------*/
@@ -103,7 +95,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                     this.importedServicesCount++;
 
                     let importSource: TImportSource;
-                    if (containerServices.includes(specifier.imported.name))
+                    if (app.containerServices.includes(specifier.imported.name))
                         importSource = 'container';
                     else
                         importSource = 'application';

@@ -6,8 +6,6 @@
 import path from 'path';
 import webpack from 'webpack';
 import fs from 'fs-extra';
-import micromatch from 'micromatch';
-import moduleAlias from 'module-alias';
 
 import SpeedMeasurePlugin from "speed-measure-webpack-plugin";
 const smp = new SpeedMeasurePlugin({ disable: true });
@@ -147,6 +145,10 @@ dependences: ${JSON.stringify(dependences)},
             }
         }
 
+        // Define the app class identifier
+        const appClassIdentifier = app.identity.identifier;
+        const containerServices = app.containerServices.map( s => "'" + s + "'").join('|');
+
         // Output the services index
         fs.outputFileSync(
             path.join( app.paths.server.generated, 'services.ts'),
@@ -161,12 +163,39 @@ export default {
 
         fs.outputFileSync(
             path.join( app.paths.server.generated, 'services.d.ts'),
-`declare module "@app" {
-    type Services = import("./services").Services;
-    const ServerServices: Services & {
-        app: import('@server/app').Application<Services>
-    }
+`type InstalledServices = import('./services').Services;
+
+declare type ${appClassIdentifier} = import("@/server").default;
+
+declare module "@app" {
+
+    import { ApplicationContainer } from '@server/app/container';
+
+    const ServerServices: (
+        Pick< 
+            ApplicationContainer<InstalledServices>, 
+            ${containerServices}
+        >
+        & 
+        ${appClassIdentifier}
+    )
+
     export = ServerServices
+}
+
+declare module '@server/app' {
+
+    import { Application } from "@server/app/index";
+    import { ServicesContainer } from "@server/app/service/container";
+
+    export interface Exported {
+        Application: typeof Application,
+        Services: ServicesContainer<InstalledServices>,
+    }
+
+    const foo: Exported;
+
+    export = foo;
 }`
         );
     }
