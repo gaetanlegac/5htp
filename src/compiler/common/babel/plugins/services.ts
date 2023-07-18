@@ -35,8 +35,23 @@ function Plugin(babel, { app, side, debug }: TOptions) {
     const t = babel.types as typeof types;
 
     /*
-        - Wrap route.get(...) with (app: Application) => { }
-        - Inject chunk ID into client route options
+        Transforms:
+            import { MyService, Environment } from '@app';
+            ...
+            MyService.method()
+            Environment.name
+
+        To:
+            import app from '@app';
+            import Container from '@server/app/container';
+            ...
+            app.services.MyService.method()
+            Container.Environment.name   
+            
+        Processed files:
+            @/server/config
+            @/server/routes
+            @/server/services
     */
 
     const plugin: PluginObj<{ 
@@ -60,7 +75,13 @@ function Plugin(babel, { app, side, debug }: TOptions) {
         pre(state) {
 
             this.filename = state.opts.filename as string;
-            this.processFile = this.filename.startsWith( cli.paths.appRoot + '/src/server' );
+            this.processFile = (
+                this.filename.startsWith( cli.paths.appRoot + '/src/server/config' )
+                ||
+                this.filename.startsWith( cli.paths.appRoot + '/src/server/routes' )
+                ||
+                this.filename.startsWith( cli.paths.appRoot + '/src/server/services' )
+            )
 
             this.importedServices = {}
             this.bySource = {
