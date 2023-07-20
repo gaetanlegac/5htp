@@ -142,13 +142,14 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                         )
                     );
 
-                if (this.bySource.application > 0)
+                // NOTE: Update 20/07: services should be accessed through current service instance
+                /*if (this.bySource.application > 0)
                     replaceWith.push(
                         t.importDeclaration(
                             [t.importDefaultSpecifier( t.identifier('application') )],
                             t.stringLiteral( cli.paths.core.src + '/server/app/instance')
                         )
-                    );
+                    );*/
 
                 path.replaceWithMultiple(replaceWith);
             },
@@ -191,8 +192,8 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                             ? t.identifier( service.source )
                             // application.services.Disks
                             : t.memberExpression(
-                                t.identifier( service.source ),
-                                t.identifier('services'),
+                                t.identifier('this'),
+                                t.identifier('app'),
                             ),
                         path.node
                     )
