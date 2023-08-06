@@ -6,12 +6,13 @@
 import path from 'path';
 import type webpack from 'webpack';
 import * as types from '@babel/types'
+import PresetReact from '@babel/preset-react';
 
 // Core
 import PluginIndexage from '../plugins/indexage';
 
 import cli from '@cli';
-import type { TAppSide, default as App } from '@cli/app';
+import type { TAppSide, App } from '@cli/app';
 
 /*----------------------------------
 - REGLES
@@ -85,7 +86,7 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
                 // NOTE: On résoud les plugins et presets directement ici
                 //      Autrement, babel-loader les cherchera dans projet/node_modules
 
-                [require("@babel/plugin-proposal-decorators"), { "legacy": true }],
+                //[require("@babel/plugin-proposal-decorators"), { "legacy": true }],
 
                 [require('@babel/plugin-proposal-class-properties'), { "loose": true }],
 
@@ -121,8 +122,6 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
                         }
                     }]
                 ]),
-
-                //require("./plugins/pages")({ side }),
 
                 require('./routes/routes')({ side, app, debug: false }),
 
