@@ -154,9 +154,9 @@ dependences: ${JSON.stringify(dependences)},
             path.join( app.paths.client.generated, 'services.d.ts'),
 `declare module "@app" {
 
-    import { CrossPathClient } from '@/client/index';
+    import ${appClassIdentifier} from '@/client/index';
 
-    const appClass: CrossPathClient;
+    const appClass: ${appClassIdentifier};
 
     export = appClass
 }`
@@ -200,8 +200,12 @@ declare module '@server/app' {
     import { Application } from "@server/app/index";
     import { ServicesContainer } from "@server/app/service/container";
 
+    abstract class ApplicationWithServices extends Application<
+        ServicesContainer<InstalledServices>
+    > {}
+
     export interface Exported {
-        Application: typeof Application,
+        Application: typeof ApplicationWithServices,
         Services: ServicesContainer<InstalledServices>,
     }
 
