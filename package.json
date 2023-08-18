@@ -1,7 +1,7 @@
 {
 	"name": "5htp",
 	"description": "Convenient TypeScript framework designed for Performance and Productivity.",
-	"version": "0.3.2",
+	"version": "0.3.2-1",
 	"author": "Gaetan Le Gac (https://github.com/gaetanlegac)",
 	"repository": "git://github.com/gaetanlegac/5htp.git",
 	"license": "MIT",
