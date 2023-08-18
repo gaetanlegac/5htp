@@ -22,9 +22,14 @@ import { app, App } from '../app';
 export const run = () => new Promise<void>(async () => {
 
     const compiler = new Compiler('dev', {
-        before: () => {
+        before: (compiler) => {
 
-            stopApp();
+            const changedFilesList = compiler.modifiedFiles ? [...compiler.modifiedFiles] : [];
+
+            if (changedFilesList.length === 0)
+                stopApp("Starting a new compilation");
+            else
+                stopApp("Need to recompile because files changed:\n" + changedFilesList.join('\n'));
 
         }, 
         after: () => {
@@ -43,7 +48,10 @@ export const run = () => new Promise<void>(async () => {
         poll: 1000,
 
         // Decrease CPU or memory usage in some file systems
-        ignored: /node_modules\/(?!5htp\-core\/src\/)/,
+        // Ignore updated from:
+        // - Node modules except 5HTP core (framework dev mode)
+        // - Generated files during runtime (cause infinite loop. Ex: models.d.ts)
+        ignored: /(node_modules\/(?!5htp\-core\/src\/))|(\.generated\/)/
 
         //aggregateTimeout: 1000,
     }, async (error, stats) => {
@@ -69,7 +77,7 @@ export const run = () => new Promise<void>(async () => {
     });
 
     Keyboard.input('ctrl+c', () => {
-        stopApp();
+        stopApp("CTRL+C Pressed");
     });
 });
 
@@ -79,9 +87,9 @@ export const run = () => new Promise<void>(async () => {
 ----------------------------------*/
 let cp: ChildProcess | undefined = undefined;
 
-async function startApp(app: App) {
+async function startApp( app: App ) {
 
-    stopApp();
+    stopApp('Restart asked');
 
     console.info(`Launching new server ...`);
     cp = spawn('node', ['' + app.paths.bin + '/server.js', '--preserve-symlinks'], {
@@ -92,9 +100,9 @@ async function startApp(app: App) {
     });
 }
 
-function stopApp() {
+function stopApp( reason: string ) {
     if (cp !== undefined) {
-        console.info(`Killing current server instance (ID: ${cp.pid}) ...`);
+        console.info(`Killing current server instance (ID: ${cp.pid}) for the following reason:`, reason);
         cp.kill();
     }
 

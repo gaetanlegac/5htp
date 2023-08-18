@@ -17,7 +17,7 @@ import createServerConfig from './server';
 import createClientConfig from './client';
 import { TCompileMode } from './common';
 
-type TCompilerCallback = () => void
+type TCompilerCallback = (compiler: webpack.Compiler) => void
 
 /*----------------------------------
 - FONCTION
@@ -92,14 +92,36 @@ export default class Compiler {
     }
 
     private findServices( dir: string ) {
+
+        const blacklist = ['node_modules', '5htp-core']
         const files: string[] = [];
         const dirents = fs.readdirSync(dir, { withFileTypes: true });
-        for (const dirent of dirents) {
-            const res = path.resolve(dir, dirent.name);
-            if (dirent.isDirectory()) {
-                files.push( ...this.findServices(res) );
+
+        for (let dirent of dirents) {
+
+            let fileName = dirent.name;
+            let filePath = path.resolve(dir, fileName);
+
+            if (blacklist.includes( fileName ))
+                continue;
+
+            // Define is we should recursively find service in the current item
+            let iterate: boolean = false;
+            if (dirent.isSymbolicLink()) {
+
+                const realPath = path.resolve( dir, fs.readlinkSync(filePath) );
+                const destinationInfos = fs.lstatSync( realPath );
+                if (destinationInfos.isDirectory())
+                    iterate = true;
+
+            } else if (dirent.isDirectory())
+                iterate = true;
+
+            // Update the list of found services
+            if (iterate) {
+                files.push( ...this.findServices(filePath) );
             } else if (dirent.name === 'service.json') {
-                files.push( path.dirname(res) );
+                files.push( path.dirname(filePath) );
             }
         }
         return files;
@@ -113,9 +135,9 @@ export default class Compiler {
 
         // Index services
         const searchDirs = {
-            '@server/services': path.join(cli.paths.core.src, 'server', 'services'),
-            '@/server/services': path.join(app.paths.src, 'server', 'services'),
-            // TODO: node_modules
+            '@server/services/': path.join(cli.paths.core.src, 'server', 'services'),
+            '@/server/services/': path.join(app.paths.src, 'server', 'services'),
+            '': path.join(app.paths.root, 'node_modules'),
         }
 
         for (const importationPrefix in searchDirs) {
@@ -128,7 +150,8 @@ export default class Compiler {
                 const metasFile = path.join( serviceDir, 'service.json');
                 const { id, name, parent, dependences } = require(metasFile);
 
-                const importationPath = importationPrefix + serviceDir.substring( searchDir.length );
+                // The +1 is to remove the slash
+                const importationPath = importationPrefix + serviceDir.substring( searchDir.length + 1 );
                 
                 // Generate index & typings
                 imported.push(`import type ${name} from "${importationPath}";`);
@@ -154,7 +177,7 @@ dependences: ${JSON.stringify(dependences)},
             path.join( app.paths.client.generated, 'services.d.ts'),
 `declare module "@app" {
 
-    import ${appClassIdentifier} from '@/client/index';
+    import { ${appClassIdentifier} } from '@/client/index';
 
     const appClass: ${appClassIdentifier};
 
@@ -241,9 +264,9 @@ declare module '@server/app' {
             let finished: (() => void);
             this.compiling[name] = new Promise((resolve) => finished = resolve);
 
-            compiler.hooks.compile.tap(name, () => {
-
-                this.callbacks.before && this.callbacks.before();
+            compiler.hooks.compile.tap(name, (compilation) => {
+                
+                this.callbacks.before && this.callbacks.before( compiler );
 
                 this.compiling[name] = new Promise((resolve) => finished = resolve);
 
