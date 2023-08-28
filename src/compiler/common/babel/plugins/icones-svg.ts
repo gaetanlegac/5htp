@@ -33,6 +33,8 @@ function Plugin (babel) {
 
     const plugin: PluginObj<{
         referencerIcone: (nomBrut: string) => string | null,
+        setNodeAsProcessed: (node: types.Node) => types.Node;
+        hasBeenProcessed: (node: types.Node) => boolean | undefined,
         fichier: string,
         traiter: boolean,
         iconeTrouvee: boolean,
@@ -85,6 +87,14 @@ function Plugin (babel) {
                 return this.icones[ cheminIconeBrut ].id;
             }
 
+            this.setNodeAsProcessed = (node: types.Node) => {
+                node.innerComments = [{ type: 'CommentBlock', 'value': '@iconId' }]
+                return node;
+            }
+
+            this.hasBeenProcessed = (node: types.Node) =>
+                node.innerComments?.some( c => c.value === '@iconId' )
+
         },
         visitor: {
             Program: {
@@ -106,6 +116,8 @@ function Plugin (babel) {
                     path.node.leadingComments.length !== 0
                     &&
                     path.node.leadingComments[0].value === ' @icon '
+                    &&
+                    !this.hasBeenProcessed( path.node )
                 ) {
 
                     // Remplacement par id
@@ -114,7 +126,9 @@ function Plugin (babel) {
                         return;
                         
                     path.replaceWith(
-                        t.stringLiteral(idIcone)
+                        this.setNodeAsProcessed(
+                            t.stringLiteral(idIcone)
+                        )
                     );
 
                     path.skip();
@@ -130,7 +144,12 @@ function Plugin (babel) {
                     path.node.key.name === 'icon'
                     &&
                     path.node.value?.type === 'StringLiteral'
+                    &&
+                    !this.hasBeenProcessed( path.node )
                 ) {
+
+                    if (this.fichier.includes("award"))
+                        console.log( path.node.value.value, path.node.innerComments,path.node.leadingComments, path.node.trailingComments );
 
                     // Remplacement par id
                     const idIcone = this.referencerIcone(path.node.value.value);
@@ -138,9 +157,11 @@ function Plugin (babel) {
                         return;
 
                     path.replaceWith(
-                        t.objectProperty(
-                            t.identifier('icon'),
-                            t.stringLiteral( idIcone )
+                        this.setNodeAsProcessed(
+                            t.objectProperty(
+                                t.identifier('icon'),
+                                t.stringLiteral( idIcone ),
+                            )
                         )
                     );
 
@@ -158,6 +179,8 @@ function Plugin (babel) {
                     path.node.name.name.startsWith("icon")
                     &&
                     path.node.value
+                    &&
+                    !this.hasBeenProcessed( path.node )
                 ) {
 
                     const nomAttr = path.node.name.name;
@@ -199,10 +222,12 @@ function Plugin (babel) {
                     } else
                         return;
 
-                    path.replaceWith(
-                        t.jsxAttribute(
-                            t.jsxIdentifier( nomAttr ),
-                            remplacement
+                    path.replaceWith( 
+                        this.setNodeAsProcessed(
+                            t.jsxAttribute(
+                                t.jsxIdentifier( nomAttr ),
+                                remplacement
+                            )
                         )
                     );
 
@@ -224,6 +249,8 @@ function Plugin (babel) {
                     path.node.openingElement.name.type === 'JSXIdentifier'
                     &&
                     path.node.openingElement.name.name === 'i'
+                    &&
+                    !this.hasBeenProcessed( path.node )
                 ) {
 
                     // Extraction des attributs src et class
@@ -291,7 +318,7 @@ function Plugin (babel) {
                             ? attrs.class.expression
                             : null
 
-                    path.replaceWith(
+                    path.replaceWith( this.setNodeAsProcessed(
 
                         // Balise <i>
                         t.jsxElement(
@@ -330,7 +357,7 @@ function Plugin (babel) {
                             path.node.children,
                             path.node.selfClosing
                         )
-                    );
+                    ));
                 }
             }
         },

@@ -90,12 +90,14 @@ export default class IconesSVG extends Indexeur {
 
         let maj = false;
 
+        //console.log('======maj', Object.keys( donneesMeta ));
+
         // Pour chacune d'entre elles
         for (const cheminIcone in donneesMeta) {
 
             // Verif si existante
             if (!this.iconesExistantes.includes( cheminIcone ))
-                console.error(`L'icone ${donneesMeta[cheminIcone].nom} (${cheminIcone}) utilisée dans le fichier ${fichier} n'existe pas.`);
+                console.error(`The icon you made reference to "${donneesMeta[cheminIcone].nom}" (${cheminIcone}) in the file ${fichier} doesn't exists.`);
             // Verif si déjà référencée
             else if (this.icones[ cheminIcone ] === undefined) {
                 // Sinon, référencement
