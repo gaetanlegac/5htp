@@ -7,6 +7,7 @@ process.traceDeprecation = true;
 ----------------------------------*/
 
 // Npm
+import fs from 'fs-extra';
 import cp from 'child_process';
 
 // Libs
@@ -37,6 +38,8 @@ export class CLI {
     
     public debug: boolean = false;
 
+    public packageJson: {[key: string]: any};
+
     public constructor(
         public paths = new Paths( process.cwd() )
     ) {
@@ -44,6 +47,8 @@ export class CLI {
 
         this.debug && console.log(`[cli] Apply aliases ...`);
         this.paths.applyAliases();
+
+        this.packageJson = this.loadPkg();
 
         this.start();
     }
@@ -57,6 +62,10 @@ export class CLI {
         "init": () => import('./commands/init'),
         "dev": () => import('./commands/dev'),
         "build": () => import('./commands/build'),
+    }
+
+    private loadPkg() {
+        return fs.readJSONSync(this.paths.core.root + '/package.json');
     }
 
     public start() {
@@ -90,7 +99,7 @@ export class CLI {
                 if (Array.isArray( curVal ))
                     curVal.push(a);
                 else
-                    options[opt] = a;
+                    options[opt] = a;   
 
                 opt = null;
 

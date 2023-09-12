@@ -5,6 +5,7 @@
 // npm
 import path from 'path';
 import TsAlias from 'ts-alias';
+import fs from 'fs-extra';
 
 // Cre
 import cli from '..';
@@ -30,6 +31,8 @@ export class App {
     public identity: Config.Identity;
 
     public env: TEnvConfig;
+
+    public packageJson: {[key: string]: any};
 
     public paths = {
 
@@ -71,6 +74,8 @@ export class App {
         const configParser = new ConfigParser( cli.paths.appRoot );
         this.identity = configParser.identity();
         this.env = configParser.env();
+        this.packageJson = this.loadPkg();
+        
     }
 
     /*----------------------------------
@@ -94,6 +99,10 @@ export class App {
             ],
             debug: false
         }),
+    }
+
+    private loadPkg() {
+        return fs.readJSONSync(this.paths.root + '/package.json');
     }
 }
 

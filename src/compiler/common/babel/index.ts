@@ -18,12 +18,6 @@ import type { TAppSide, App } from '@cli/app';
 - REGLES
 ----------------------------------*/
 module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[] => {
-
-    const pkg = {
-        app: require(app.paths.root + '/package.json'),
-        core: require(cli.paths.core.root + '/package.json'),
-    }
-    
     return [{
         loader: 'babel-loader',
         options: { 
@@ -54,7 +48,7 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
                     "corejs": 3, // default would be 2
 
                     targets: {
-                        browsers: pkg.app.browserslist,
+                        browsers: app.packageJson.browserslist,
                     },
                     forceAllTransforms: !dev, // for UglifyJS
                     modules: false,

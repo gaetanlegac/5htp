@@ -16,7 +16,7 @@ import InjectDeps from './plugins/indexage/injection-dependances';
 import cli from '../..';
 
 // Type
-import type App from '../../app';
+import type { App } from '../../app';
 import type { TAppSide } from '../../app';
 
 /*----------------------------------
@@ -68,11 +68,16 @@ export default function createCommonConfig( app: App, side: TAppSide, mode: TCom
             // https://webpack.js.org/plugins/define-plugin/
             new webpack.DefinePlugin({
 
+                // Flags
                 __DEV__: dev,
                 SERVER: side === 'server',
-                BUILD_DATE: JSON.stringify(dayjs().format('YY.MM.DD-HH.mm')),
 
+                // Core
+                CORE_VERSION: JSON.stringify( cli.packageJson.version ),
                 CORE_PATH: JSON.stringify(cli.paths.core.root),
+
+                // Application
+                BUILD_DATE: JSON.stringify(dayjs().format('YY.MM.DD-HH.mm')),
                 APP_PATH: JSON.stringify(app.paths.root),
                 APP_NAME: JSON.stringify(app.identity.web.title),
 

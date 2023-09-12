@@ -42,11 +42,9 @@ export async function run() {
     fs.emptyDirSync(temp);
 
     // Merge package.json: framework + app
-    const appPkg = fs.readJSONSync(app.paths.root + '/package.json');
-    const corePkg = fs.readJSONSync(cli.paths.core.root + '/package.json');
     fs.outputJSONSync(temp + '/package.json', {
         ...appPkg,
-        dependencies: mergeDeps(corePkg, appPkg),
+        dependencies: mergeDeps(cli.packageJson, appPkg),
         devDependencies: {}
     }, { spaces: 4 });
 
