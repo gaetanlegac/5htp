@@ -9,11 +9,6 @@ import type App from '../../../app';
 
 module.exports = (app: App, dev: Boolean, client: boolean) => {
 
-    // OBSOLETE: A projet can have multiple themes, 
-    //      And the user have to choose in which score he wants to use a theme (by importing it)
-    const paletteLess = fs.readFileSync( app.paths.src + '/client/assets/themes/main.less', 'utf8');
-    const themeVars = lessToJs(paletteLess, { resolveVariables: true, stripPrefix: true });
-
     return [
 
         // Apply PostCSS plugins including autoprefixer
@@ -53,8 +48,6 @@ module.exports = (app: App, dev: Boolean, client: boolean) => {
                     // Défault = parens-division depuis 4.0.0
                     // https://lesscss.org/usage/#less-options-math
                     math: 'always',
-
-                    globalVars: themeVars
                 },
             }
         },
