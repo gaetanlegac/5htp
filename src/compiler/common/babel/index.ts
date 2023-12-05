@@ -3,11 +3,8 @@
 ----------------------------------*/
 
 // Npm
-import path from 'path';
 import type webpack from 'webpack';
-import * as types from '@babel/types'
-import PresetReact from '@babel/preset-react';
-
+import PresetBabel, { Options } from '@babel/preset-env';
 // Core
 import PluginIndexage from '../plugins/indexage';
 
@@ -18,6 +15,32 @@ import type { TAppSide, App } from '@cli/app';
 - REGLES
 ----------------------------------*/
 module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[] => {
+
+    const babelPresetEnvConfig: Options = side === 'client'  ? {
+
+        // Ajoute automatiquement les polyfills babel
+        // https://stackoverflow.com/a/61517521/12199605
+        "useBuiltIns": "usage", // alternative mode: "entry"
+        "corejs": 3, // default would be 2
+
+        targets: {
+            browsers: dev
+                ? 'last 2 versions'
+                : app.packageJson.browserslist,
+        },
+        forceAllTransforms: !dev, // for UglifyJS
+        modules: false,
+        debug: false,
+        bugfixes: !dev
+    } : {
+        targets: {
+            node: true,//pkg.engines.node.match(/(\d+\.?)+/)[0],
+        },
+        modules: false,
+        useBuiltIns: false,
+        debug: false,
+    }
+
     return [{
         loader: 'babel-loader',
         options: { 
@@ -40,27 +63,7 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
             presets: [
 
                 // https://github.com/babel/babel-preset-env
-                [require('@babel/preset-env'), side === 'client' ? {
-
-                    // Ajoute automatiquement les polyfills babel
-                    // https://stackoverflow.com/a/61517521/12199605
-                    "useBuiltIns": "usage", // alternative mode: "entry"
-                    "corejs": 3, // default would be 2
-
-                    targets: {
-                        browsers: app.packageJson.browserslist,
-                    },
-                    forceAllTransforms: !dev, // for UglifyJS
-                    modules: false,
-                    debug: false,
-                } : {
-                    targets: {
-                        node: true,//pkg.engines.node.match(/(\d+\.?)+/)[0],
-                    },
-                    modules: false,
-                    useBuiltIns: false,
-                    debug: false,
-                }],
+                [PresetBabel, babelPresetEnvConfig],
 
                 [require("@babel/preset-typescript"), {
                     useDefineForClassFields: true,
