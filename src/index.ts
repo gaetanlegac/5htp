@@ -136,7 +136,7 @@ export class CLI {
 
         }).finally(() => {
 
-            process.exit();
+            process.exit(0);
 
         })
     }

@@ -51,7 +51,7 @@ class KeyboardCommands {
             if (str === 'ctrl+c') {
 
                 console.log(`Exiting ...`);
-                process.exit();
+                process.exit(0);
 
             } 
 
