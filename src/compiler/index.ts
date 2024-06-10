@@ -19,6 +19,14 @@ import { TCompileMode } from './common';
 
 type TCompilerCallback = (compiler: webpack.Compiler) => void
 
+type TServiceMetas = {
+    id: string, 
+    name: string, 
+    parent: string, 
+    dependences: string, 
+    importationPath: string
+}
+
 /*----------------------------------
 - FONCTION
 ----------------------------------*/
@@ -93,7 +101,7 @@ export default class Compiler {
 
     private findServices( dir: string ) {
 
-        const blacklist = ['node_modules', '5htp-core']
+        const blacklist = ['node_modules', '5htp-core', '5htp']
         const files: string[] = [];
         const dirents = fs.readdirSync(dir, { withFileTypes: true });
 
@@ -135,37 +143,51 @@ export default class Compiler {
 
         // Index services
         const searchDirs = {
+            // The less priority is the first
+            // The last override the first if there are duplicates
             '@server/services/': path.join(cli.paths.core.src, 'server', 'services'),
             '@/server/services/': path.join(app.paths.src, 'server', 'services'),
             '': path.join(app.paths.root, 'node_modules'),
         }
 
+        const servicesIndex: {[id: string]: TServiceMetas} = {};
         for (const importationPrefix in searchDirs) {
 
             const searchDir = searchDirs[ importationPrefix ];
             const services = this.findServices(searchDir);
 
             for (const serviceDir of services) {
-
                 const metasFile = path.join( serviceDir, 'service.json');
-                const { id, name, parent, dependences } = require(metasFile);
 
                 // The +1 is to remove the slash
                 const importationPath = importationPrefix + serviceDir.substring( searchDir.length + 1 );
-                
-                // Generate index & typings
-                imported.push(`import type ${name} from "${importationPath}";`);
-                exportedType.push(`'${id}': ${name},`);
-                // NOTE: only import enabled packages to optimize memory
-                // TODO: don't index non-setuped packages in the exported metas
-                exportedMetas.push(`'${id}': {
+
+                const serviceMetas = require(metasFile);
+
+                servicesIndex[ metasFile ] = {
+                    ...serviceMetas,
+                    importationPath
+                };
+            }
+        }
+
+        // Create importation directives
+        for (const serviceId in servicesIndex) {
+
+            const { id, name, parent, dependences, importationPath } = servicesIndex[ serviceId ];
+            
+            // Generate index & typings
+            imported.push(`import type ${name} from "${importationPath}";`);
+            exportedType.push(`'${id}': ${name},`);
+            // NOTE: only import enabled packages to optimize memory
+            // TODO: don't index non-setuped packages in the exported metas
+            exportedMetas.push(`'${id}': {
 class: () => require("${importationPath}"),
 id: "${id}",
 name: "${name}",
 parent: "${parent}",
 dependences: ${JSON.stringify(dependences)},
-                },`);
-            }
+            },`);
         }
 
         // Define the app class identifier
