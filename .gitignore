@@ -6,6 +6,7 @@ env.*
 .temp
 bin
 public
+.git/logs
 
 # Configs
 .vscode

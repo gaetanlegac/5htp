@@ -34,7 +34,7 @@ export default class IconesSVG extends Indexeur {
     private cacheTypes: string;
     private cacheIndex: string;
 
-    public constructor( app: App, private debug?: boolean ) {
+    public constructor( app: App, private buildId: number, private debug?: boolean ) {
         super();
 
         this.formats = ['woff2'];
@@ -137,7 +137,7 @@ export default class IconesSVG extends Indexeur {
 
         const result = await webfont({
             files: Object.keys(cheminIcones),
-            fontName: "icons",
+            fontName: "icons", // Force efresh icons woff on app update
             template: this.dossierIcones + 'template.css',
             // @ts-ignore
             formats: this.formats,
@@ -182,7 +182,7 @@ export default class IconesSVG extends Indexeur {
         // Enregistrement fichiers
         for (const format of this.formats)
             fs.outputFileSync(this.dossierSortie + 'icons.' + format, result[ format ]);
-        fs.outputFileSync(this.dossierSortie + 'icons.css', result.template);
+        fs.outputFileSync(this.dossierSortie + 'icons.css', result.template?.replace('icons.woff2', 'icons.woff2?' + this.buildId));
 
         fs.outputFileSync(this.cacheTypes, 'export type TIcones = ' + typeIcones.join('|') );
 

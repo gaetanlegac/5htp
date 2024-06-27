@@ -49,7 +49,18 @@ function Plugin(babel, { app, side, debug }: TOptions) {
     /*
         - Wrap route.get(...) with (app: Application) => { }
         - Inject chunk ID into client route options
-        - Transform api.fetch calls
+        - Transform aoi.fetch:
+        
+        Input:
+        const { stats } = api.fetch({
+            stats: api.get(...)
+        }):
+
+        Output:
+
+        Route.page('/', { data: { stats: api.get(...) } });
+        ...
+        const stats = page.data.stats;
     */
 
     const plugin: PluginObj<{ 
@@ -257,7 +268,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
         // Add data fetchers
         if (routeDef.dataFetchers.length !== 0) {
 
-            // (contollerParams) => fetchers
+            // (contollerParams) => { stats: api.get(...) }
             const dataFetchersFunc = t.arrowFunctionExpression(
                 renderer.params.map( param => t.cloneNode( param )),
                 t.objectExpression(

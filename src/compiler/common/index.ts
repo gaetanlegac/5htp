@@ -44,6 +44,7 @@ export type TCompileMode = 'dev' | 'prod'
 export default function createCommonConfig( app: App, side: TAppSide, mode: TCompileMode ): webpack.Configuration {
 
     const dev = mode === 'dev';
+    const buildId = Date.now();
     const config: webpack.Configuration = {
 
         // Project root
@@ -78,13 +79,14 @@ export default function createCommonConfig( app: App, side: TAppSide, mode: TCom
 
                 // Application
                 BUILD_DATE: JSON.stringify(dayjs().format('YY.MM.DD-HH.mm')),
+                BUILD_ID: JSON.stringify(buildId),
                 APP_PATH: JSON.stringify(app.paths.root),
                 APP_NAME: JSON.stringify(app.identity.web.title),
 
             }),
 
             new PluginIndexage(side === 'client' ? {
-                'icones-svg': new IconesSvg(app),
+                'icones-svg': new IconesSvg(app, buildId),
             } : {
                 //'injection-dependances': new InjectDeps,
             }),
