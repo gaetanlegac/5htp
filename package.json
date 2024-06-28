@@ -40,7 +40,7 @@
 		"@types/webpack-env": "^1.16.2",
 		"@types/ws": "^7.4.7",
 		"babel-loader": "^8.2.2",
-		"babel-plugin-glob-import": "^0.0.8",
+		"babel-plugin-glob-import": "^0.0.8-1",
 		"babel-plugin-transform-imports": "^2.0.0",
 		"babel-plugin-transform-react-remove-prop-types": "^0.4.24",
 		"brotli-webpack-plugin": "^1.1.0",
