@@ -140,7 +140,7 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
 
             overrides: [
 
-                require('./plugins/icones-svg'),
+                require('./plugins/icones-svg')(app),
                 
                 // Universal forms
                 //require('./plugins/form'),

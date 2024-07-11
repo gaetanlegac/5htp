@@ -4,30 +4,29 @@
 
 // Npm
 import * as types from '@babel/types'
-
 import { PluginObj } from '@babel/core';
+
+import type { App } from '../../../../app';
 
 export type TIndexIcones = { [chemin: string]: { id: string, nom: string, fichier: string } };
 
 /*----------------------------------
 - WEBPACK RULE
 ----------------------------------*/
-module.exports = {
+module.exports = (app: App) => ({
     test: /\.(tsx|jsx|ts)$/,  // <i src="icon" /> et /* @icon */"icon"
     plugins: [
-        [Plugin]
+        [Plugin, { app }]
     ]
-}
+})
 
 const debug = false;
-
-const defaultIconsPack = 'regular';
 
 /*----------------------------------
 - PLUGIN
 ----------------------------------*/
 const ids: string[] = []
-function Plugin (babel) {
+function Plugin (babel, { app }: { app: App }) {
 
     const t = babel.types as typeof types;
 
@@ -57,7 +56,7 @@ function Plugin (babel) {
                 let [dossierIcone, nomIcone] = nomBrut.split('/');
                 if (nomIcone === undefined) {
                     nomIcone = dossierIcone;
-                    dossierIcone = defaultIconsPack;
+                    dossierIcone = app.identity.iconsPack || 'regular';
                 }
 
                 // Extraction des infos

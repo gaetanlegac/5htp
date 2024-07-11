@@ -13,7 +13,7 @@ import cli from '@cli';
 
 // Types
 import type { TIndexIcones } from '../../../babel/plugins/icones-svg';
-import type App from '@cli/app';
+import type { App } from '../../../../../app';
 
 /*----------------------------------
 - UTILS
