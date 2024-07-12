@@ -16,5 +16,8 @@ module.exports = (app: App, dev: boolean, client: boolean): webpack.RuleSetRule[
             }
         }
 
-    }]
+    }, {
+        test: /\.(webm|mp4|avi|mpk|mov|mkv)$/,
+        type: 'asset/resource',
+    },]
 }
