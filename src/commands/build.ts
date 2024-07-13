@@ -28,7 +28,7 @@ export const run = (): Promise<void> => new Promise(async (resolve) => {
             throw error;
         }
 
-        resolve();
+        //resolve();
 
     });
 });

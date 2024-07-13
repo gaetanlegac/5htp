@@ -122,7 +122,11 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
 
                 require('./routes/routes')({ side, app, debug: false }),
 
-                ...(side === 'client' ? [] : [
+                ...(side === 'client' ? [
+
+                    [require('babel-plugin-transform-remove-console')],
+
+                ] : [
 
                     require('./plugins/services')({ side, app, debug: false }),
 
@@ -142,16 +146,9 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
 
                 require('./plugins/icones-svg')(app),
                 
-                // Universal forms
-                //require('./plugins/form'),
-
-                // Generate typing from sequelize model declaration
-                //require("./plugins/models")({ side }),
-
                 ...(side === 'client' ? [
 
                 ] : [
-
                     //require('./plugins/queries'),
                     //require('./plugins/injection-dependances'),
                 ]),

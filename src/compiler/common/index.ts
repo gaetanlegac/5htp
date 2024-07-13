@@ -91,7 +91,7 @@ export default function createCommonConfig( app: App, side: TAppSide, mode: TCom
                 //'injection-dependances': new InjectDeps,
             }),
 
-            ...(cli.args.analyze === side ? [
+            ...(side === 'client' && cli.args.analyze ? [
 
                 new BundleAnalyzerPlugin({
                     defaultSizes: 'stat',
@@ -99,8 +99,6 @@ export default function createCommonConfig( app: App, side: TAppSide, mode: TCom
                 }),
 
             ] : []),
-
-
 
             ...(dev ? [
 

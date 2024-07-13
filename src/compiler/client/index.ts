@@ -245,27 +245,21 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                 // Minimum size, in bytes, for a chunk to be generated.
                 // Pour les imports async (ex: pages), on crée systématiquemen un chunk séparé
                 //      Afin que le css d'une page ne soit appliqué qu'à la page concernée
-                minSize: 0,
-
                 cacheGroups: {
-
-                    /*defaultVendors: {
-                        test: /[\\/]node_modules[\\/]/,
-                        name(module) {
-                            const packageName = module.context.match(
-                                /[\\/]node_modules[\\/](.*?)([\\/]|$)/,
-                            )[1];
-                            return `npm.${packageName.replace('@', '')}`;
+                    defaultVendors: {
+                        test: (module) => {
+                            // Check if the module is in node_modules but not in node_modules/5htp-core
+                            return /[\\/]node_modules[\\/]/.test(module.context) && !/[\\/]node_modules[\\/]5htp-core[\\/]/.test(module.context);
                         },
                         priority: -10,
-                    },*/
-
-                    /*default: {
+                        reuseExistingChunk: true,
+                    },
+                    default: {
                         minChunks: 2,
                         priority: -20,
-                        reuseExistingChunk: true
-                    }*/
-                },
+                        reuseExistingChunk: true,
+                    },
+                },                
             },
 
             // Production

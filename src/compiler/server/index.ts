@@ -183,8 +183,8 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                 new TerserPlugin({
                     terserOptions: {
                         // Consere les classnames
-                        keep_classnames: true,
-                        keep_fnames: true
+                        //keep_classnames: true,
+                        //keep_fnames: true,
                     }
                 }),
             ]
