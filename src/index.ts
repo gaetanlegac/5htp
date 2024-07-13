@@ -75,9 +75,7 @@ export class CLI {
         if (this.commands[commandName] === undefined)
             throw new Error(`Command ${commandName} does not exists.`);
 
-        const options = {
-            workdir: process.cwd()
-        }
+        this.args.workdir = process.cwd();
 
         let opt: string | null = null;
         for (const a of argv) {
@@ -85,37 +83,35 @@ export class CLI {
             if (a[0] === '-') {
 
                 opt = a.substring(1);
-                if (!(opt in options)) 
+                if (!(opt in this.args)) 
                     throw new Error(`Unknown option: ${opt}`);
 
                 // Init with default value
-                if (typeof options[opt] === "boolean")
-                    options[opt] = true;
+                if (typeof this.args[opt] === "boolean")
+                    this.args[opt] = true;
 
             } else if (opt !== null) {
 
-                const curVal = options[opt];
+                const curVal = this.args[opt];
 
                 if (Array.isArray( curVal ))
                     curVal.push(a);
                 else
-                    options[opt] = a;   
+                    this.args[opt] = a;   
 
                 opt = null;
 
             } else {
 
-                //args.push(a);
+                this.args[ a ] = true;
 
             }
         }
 
-        this.runCommand(commandName, options);
+        this.runCommand(commandName);
     }
 
-    public async runCommand(command: string, args: TArgsObject) {
-
-        this.args = args;
+    public async runCommand(command: string) {
 
         this.debug && console.info(`Running command ${command}`, this.args);
 
