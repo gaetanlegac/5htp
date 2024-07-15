@@ -6,6 +6,7 @@
 import type { ImportTransformer } from 'babel-plugin-glob-import';
 import * as types from '@babel/types'
 import path from 'path';
+import generate from '@babel/generator';
 
 // Core
 import cli from '@cli';
@@ -32,9 +33,9 @@ module.exports = (app: App, side: TAppSide, dev: boolean): ImportTransformer => 
         side === 'client'
         &&
         (
-            request.source === '@/client/pages/**/*.tsx' 
+            request.source === '@client/pages/**/([a-z0-9]*).tsx' 
             || 
-            request.source === '@client/pages/**/*.tsx'
+            request.source === '@/client/pages/**/([a-z0-9]*).tsx'
         )
         &&
         request.type === 'import'
@@ -57,14 +58,6 @@ module.exports = (app: App, side: TAppSide, dev: boolean): ImportTransformer => 
             // Exclude layouts
             if (file.filename.includes("/_layout/")) {
                 //console.log("Exclude", file, 'from pages loaders (its a layout)');
-                continue;
-            }
-
-            // Excliude components
-            const filename = path.basename( file.filename );
-            const startsWithUppercase = alphabet.includes(filename[0]) && filename[0] === filename[0].toUpperCase();
-            if (startsWithUppercase) {
-                //console.log("Exclude", file, 'from pages loaders (its a component)');
                 continue;
             }
                 
@@ -115,6 +108,11 @@ module.exports = (app: App, side: TAppSide, dev: boolean): ImportTransformer => 
                 )
             }
         }
+        
+        console.log( generate(t.variableDeclaration("const", [t.variableDeclarator(
+            t.identifier(request.imported.name),
+            t.objectExpression(pageLoaders)
+        )])).code );
 
         return [
             ...imports,
