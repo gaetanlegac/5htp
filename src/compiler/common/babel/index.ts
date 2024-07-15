@@ -117,14 +117,18 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
                             "transform": "lodash/${member}",
                             "preventFullImport": true
                         }
-                    }]
+                    }],
+
+                    ...(side === 'client' ? [
+                        
+                        [require('babel-plugin-transform-remove-console')],
+
+                    ] : [])
                 ]),
 
                 require('./routes/routes')({ side, app, debug: false }),
 
                 ...(side === 'client' ? [
-
-                    [require('babel-plugin-transform-remove-console')],
 
                 ] : [
 
