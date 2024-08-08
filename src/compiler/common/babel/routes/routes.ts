@@ -425,9 +425,10 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                     )
                 )
             ])
-        )
+        );
 
-        //file.side === 'front' && console.log( generate(exportDeclaration).code );
+        /*(file.side === 'front' && file.path.includes('/headhunter/talents/index.tsx')) 
+            && console.log( file.path, generate(exportDeclaration).code );*/
 
         return exportDeclaration;
     }
