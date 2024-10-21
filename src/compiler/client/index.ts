@@ -116,6 +116,8 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                         app.paths.root + '/src/common',
                         cli.paths.core.root + '/src/common',
 
+                        app.paths.root + '/src/server/.generated/models.ts',
+
                     ],
                     rules: require('../common/babel')(app, 'client', dev)
                 },
