@@ -42,7 +42,7 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
     }
 
     return [{
-        loader: 'babel-loader',
+        loader: require.resolve('babel-loader'),
         options: { 
             
             // https://github.com/babel/babel-loader#options
