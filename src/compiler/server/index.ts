@@ -147,7 +147,8 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                         cli.paths.core.root + '/src/server',
 
                         // Complle 5HTP modules so they can refer to the framework instance and aliases
-                        ...getCorePluginsList(app)
+                        // Temp disabled because compile issue on vercel
+                        //...getCorePluginsList(app)
                     ],
                     rules: require('../common/babel')(app, 'server', dev)
                 }, 

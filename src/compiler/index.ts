@@ -147,7 +147,8 @@ export default class Compiler {
             // The last override the first if there are duplicates
             '@server/services/': path.join(cli.paths.core.src, 'server', 'services'),
             '@/server/services/': path.join(app.paths.src, 'server', 'services'),
-            '': path.join(app.paths.root, 'node_modules'),
+            // Temp disabled because compile issue on vercel
+            //'': path.join(app.paths.root, 'node_modules'),
         }
 
         const servicesIndex: {[id: string]: TServiceMetas} = {};
