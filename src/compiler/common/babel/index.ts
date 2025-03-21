@@ -43,6 +43,24 @@ module.exports = (app: App, side: TAppSide, dev: boolean): webpack.RuleSetRule[]
 
     return [{
         loader: require.resolve('babel-loader'),
+        exclude: (filePath) => {
+            // 1) If not in "node_modules" at all => transpile it
+            if (!filePath.includes('node_modules')) {
+                return false;
+            }
+        
+            // 2) If it’s "node_modules/5htp-core" but NOT "node_modules/5htp-core/node_modules",
+            //    then transpile. Otherwise, exclude.
+            if (
+                filePath.includes('node_modules/5htp-core') &&
+                !filePath.includes('node_modules/5htp-core/node_modules')
+            ) {
+                return false;
+            }
+        
+            // 3) Everything else in node_modules is excluded
+            return true;
+          },
         options: { 
             
             // https://github.com/babel/babel-loader#options
