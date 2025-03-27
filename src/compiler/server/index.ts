@@ -101,8 +101,12 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                     // Aliased modules
                     app.aliases.server.containsAlias(request)
                     ||
+                    // TODO: 5htp.conf: compile: include
                     // Compile 5HTP modules
                     request.startsWith('5htp-')
+                    ||
+                    // Compile 5HTP modules
+                    request.startsWith('@mantine/')
                 )
 
                 //console.log('isNodeModule', request, isNodeModule);

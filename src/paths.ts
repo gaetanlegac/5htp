@@ -149,7 +149,7 @@ export default class Paths {
             rootDir: this.core.cli
         });
 
-        //console.log('Applying Aliases ...', aliases);
+        //console.log('Applying Aliases ...', aliases.forModuleAlias());
         moduleAlias.addAliases( aliases.forModuleAlias() );
 
     }
