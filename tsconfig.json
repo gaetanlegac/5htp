@@ -20,11 +20,12 @@
         "strictPropertyInitialization": true,
         "strictNullChecks": true,
         
-        "baseUrl": "./src",
+        "baseUrl": "./",
         "outDir": "./bin",
 
         "paths": {
             "@cli/*": [ "./*" ],
+            "@cli/app": [ "./app" ],
             "@cli": [ "./" ]
         },
     },
@@ -33,5 +34,5 @@
         "transpileOnly": true,
     },
 
-    "include": ["./src"]
+    "include": ["./"]
 }
