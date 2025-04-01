@@ -56,7 +56,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
     /*
         - Wrap route.get(...) with (app: Application) => { }
         - Inject chunk ID into client route options
-        - Transform aoi.fetch:
+        - Transform api.fetch:
         
         Input:
         const { stats } = api.fetch({
@@ -85,7 +85,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
             // Replace by:      nothing
             ImportDeclaration(path) {
                 
-                const shouldTransformImports = this.file.process && this.file.side === 'front';
+                const shouldTransformImports = this.file.process;
                 if (!shouldTransformImports)
                     return;
                 
@@ -270,8 +270,8 @@ function Plugin(babel, { app, side, debug }: TOptions) {
             relativeFileName = filename.substring( cli.paths.appRoot.length );
         if (filename.startsWith( cli.paths.coreRoot ))
             relativeFileName = filename.substring( cli.paths.coreRoot.length );
-        if (filename.startsWith('/node_modules/5htp-core/'))
-            relativeFileName = filename.substring( '/node_modules/5htp-core/'.length );
+        /*if (filename.startsWith('/node_modules/5htp-core/'))
+            relativeFileName = filename.substring( '/node_modules/5htp-core/'.length );*/
         
         // The file isn't a route definition
         if (relativeFileName === undefined) {
@@ -466,10 +466,14 @@ function Plugin(babel, { app, side, debug }: TOptions) {
     function wrapRouteDefs( file: TFileInfos ) {
 
         const importedServicesList = Object.entries(file.importedServices);
+
+        if (file.path.includes('/routes/csm/missions.ts'))
+            console.log("--------WRAP ROUTE DEFS", file.path, importedServicesList.length);
+
         if (importedServicesList.length === 0)
             return;
 
-        let exportValue: types.Expression | types.BlockStatement;
+        const definitions: types.BlockStatement["body"] = [];
         if (file.side === 'front') {
 
             // Limit to one route def per file
@@ -498,48 +502,85 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
             // Force babel to create new fresh nodes
             // If we directy use statementParent, it will not be included in the final compiler code
-            exportValue = t.callExpression(
-                t.memberExpression(
-                    t.identifier( callee.object.name ),
-                    callee.property,
-                ),
-                [routePath, ...routeArgs]
+            definitions.push( 
+                t.returnStatement(
+                t.callExpression(
+                    t.memberExpression(
+                        t.identifier( callee.object.name ),
+                            callee.property,
+                        ),
+                        [routePath, ...routeArgs]
+                    )
+                )
             )
 
         } else {
 
-            exportValue = t.blockStatement([
+            definitions.push(
                 // Without spread = react jxx need additionnal loader
                 ...file.routeDefinitions.map( def => 
                     t.expressionStatement(def.definition)
                 ),
-            ])
+            )
         }
 
-        const exportDeclaration = t.exportNamedDeclaration( 
-            t.variableDeclaration('const', [
-                t.variableDeclarator(
-                    t.identifier('__register'),
-                    t.arrowFunctionExpression(
-                        [
-                            t.objectPattern(
-                                importedServicesList.map(([ local, imported ]) => 
-                                    t.objectProperty(
-                                        t.identifier( local ),
-                                        t.identifier( imported ),
-                                    )
-                                )
-                            )
-                        ], 
-                        exportValue
-                    )
+        /*
+            ({ Router, app: { Events } }}) => {
+                ...
+            }
+        */
+            const appSpread: types.ObjectProperty[] = []
+            const servicesSpread: types.ObjectProperty[] = [
+                t.objectProperty(
+                    t.identifier('app'),
+                    t.identifier('app'),
                 )
-            ])
-        );
+            ]
+            for (const [local, imported] of importedServicesList) {
+                if (imported === 'app') 
+                    appSpread.push(
+                        t.objectProperty(
+                            t.identifier(local),
+                            t.identifier(local),
+                        )
+                    )
+                else
+                    servicesSpread.push(
+                        t.objectProperty(
+                            t.identifier(local),
+                            t.identifier(imported),
+                        )
+                    )   
+            }
+            
+            // export const __register = ({ Router, app }) => { ... }
+            const exportDeclaration = t.exportNamedDeclaration( 
+                t.variableDeclaration('const', [
+                    t.variableDeclarator(
+                        t.identifier('__register'),
+                        t.arrowFunctionExpression(
+                            [
+                                t.objectPattern(servicesSpread)
+                            ], 
+                            t.blockStatement([
+                                // const { Events } = app;
+                                t.variableDeclaration('const', [
+                                    t.variableDeclarator(
+                                        t.objectPattern(appSpread),
+                                        t.identifier('app')
+                                    )
+                                ]),
+                                // Router.post(....)
+                                ...definitions,
+                            ])
+                        )
+                    )
+                ])
+            );
                     
 
-        (file.side === 'front' && file.path.includes('/server/routes/events.ts')) 
-        && console.log( file.path, generate(exportDeclaration).code );
+        /*(file.path.includes('platform/server/routes/csm/missions.ts')) 
+        && console.log( file.path, generate(exportDeclaration).code );*/
 
         return exportDeclaration;
     }
