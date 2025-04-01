@@ -23,6 +23,8 @@ module.exports = {
     ]
 }
 
+const routerMethods = ['get', 'post', 'put', 'delete', 'patch'];
+
 /*----------------------------------
 - PLUGIN
 ----------------------------------*/
@@ -133,7 +135,7 @@ function Plugin (babel) {
                         &&
                         i.node.callee.property.type === 'Identifier'
                         &&
-                        ['get', 'post', 'put', 'delete'].includes(i.node.callee.property.name)
+                        routerMethods.includes(i.node.callee.property.name)
                         &&
                         i.node.arguments.length >= 2 // url + au moins 1 middleware
                         &&

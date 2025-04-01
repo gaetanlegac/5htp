@@ -20,6 +20,21 @@ import type { TEnvConfig } from '../../core/server/app/container/config';
 
 export type TAppSide = 'server' | 'client'
 
+type TServiceSetup = {
+    id: string,
+    name: string,
+    config: {},
+    subservices: TServiceSubservices
+}
+
+type TServiceRef = {
+    refTo: string
+}
+
+type TServiceSubservices = {
+    [key: string]: TServiceSetup | TServiceRef
+}
+
 /*----------------------------------
 - SERVICE
 ----------------------------------*/
@@ -110,7 +125,7 @@ export class App {
 
     public registered = {}
 
-    public use( referenceName: string ) {
+    public use( referenceName: string ): TServiceRef {
 
         // We don't check because all service are not regstered when we register subservices
         /*if (this.registered[referenceName] === undefined) {
@@ -124,41 +139,40 @@ export class App {
 
     public setup(...args: [
         // { user: app.setup('Core/User') }
-        serviceId: string,
-        serviceConfig?: TServiceConfig,
+        servicePath: string,
+        serviceConfig?: {},
         serviceSubservices?: TServiceSubservices
     ] | [
         // app.setup('User', 'Core/User')
         serviceName: string, 
-        serviceId: string,
-        serviceConfig?: TServiceConfig,
+        servicePath: string,
+        serviceConfig?: {},
         serviceSubservices?: TServiceSubservices
-    ]) {
+    ]): TServiceSetup {
 
         // Registration to app root
         if (typeof args[1] === 'string') {
             
             const [name, id, config, subservices] = args;
 
-            const service = { id, name, config, subservices }
+            const service = { id, name, config, subservices } as TServiceSetup
 
             this.registered[name] = service;
+
+            return service;
 
         // Scoped to a parent service
         } else {
 
             const [id, config, subservices] = args;
 
-            const service = { id, config, subservices }
+            const service = { id, config, subservices } as TServiceSetup
 
             return service;
         }
     }
 
     public async warmup() {
-
-        console.log("env", this.env);
-        
 
         // Require all config files in @/server/config
         const configDir = path.resolve(cli.paths.appRoot, 'server', 'config');

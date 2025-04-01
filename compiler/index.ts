@@ -25,7 +25,8 @@ type TServiceMetas = {
     name: string, 
     parent: string, 
     dependences: string, 
-    importationPath: string
+    importationPath: string,
+    priority: number
 }
 
 /*----------------------------------
@@ -140,33 +141,40 @@ export default class Compiler {
         
 
         // Index services
-        const searchDirs = {
+        const searchDirs = [
             // The less priority is the first
-            // The last override the first if there are duplicates
-            '@server/services/': path.join(cli.paths.core.root, 'server', 'services'),
-            '@/server/services/': path.join(app.paths.root, 'server', 'services'),
+            {
+                path: '@server/services/',
+                priority: -1,
+                root: path.join(cli.paths.core.root, 'server', 'services')
+            },
+            {
+                path: '@/server/services/',
+                priority: 0,
+                root: path.join(app.paths.root, 'server', 'services')
+            },
             // Temp disabled because compile issue on vercel
             //'': path.join(app.paths.root, 'node_modules'),
-        }
+        ]
 
         // Generate app class file
         const servicesAvailable: {[id: string]: TServiceMetas} = {};
-        for (const importationPrefix in searchDirs) {
+        for (const searchDir of searchDirs) {
 
-            const searchDir = searchDirs[ importationPrefix ];
-            const services = this.findServices(searchDir);
+            const services = this.findServices(searchDir.root);
 
             for (const serviceDir of services) {
                 const metasFile = path.join( serviceDir, 'service.json');
 
                 // The +1 is to remove the slash
-                const importationPath = importationPrefix + serviceDir.substring( searchDir.length + 1 );
+                const importationPath = searchDir.path + serviceDir.substring( searchDir.root.length + 1 );
 
                 const serviceMetas = require(metasFile);
 
                 servicesAvailable[ serviceMetas.id ] = {
+                    importationPath,
+                    priority: searchDir.priority,
                     ...serviceMetas,
-                    importationPath
                 };
             }
         }
@@ -202,6 +210,7 @@ export default class Compiler {
 
             // Subservices
             let subservices = '';
+            let sortedSubservices = [];
             if (serviceConfig.subservices) {
 
                 const subservicesList = serviceConfig.subservices;
@@ -210,10 +219,10 @@ export default class Compiler {
                 );
 
                 // Sort by priority
-                const sortedSubservices = subservicesCode.sort((a, b) => a.priority - b.priority);
+                sortedSubservices = subservicesCode.sort((a, b) => a.priority - b.priority);
 
                 // Generate code
-                subservices = sortedSubservices.map(s => s.code).join('\n');
+                subservices = sortedSubservices.map(s => `${s.name}: ${s.instanciation},`).join('\n');
             }
 
             // Generate the service instance
@@ -226,25 +235,17 @@ export default class Compiler {
                 this 
             )`
 
-            if (level === 0)
-                return {
-                    name: serviceName,
-                    code: `public ${serviceName} = ${instanciation};`,
-                    priority: serviceConfig.config?.priority || 0
-                };
-            else
-                return {
-                    name: serviceName,
-                    code: `${serviceName}: ${instanciation},`,
-                    priority: serviceConfig.config?.priority || 0
-                };
+            return {
+                id: serviceConfig.id,
+                name: serviceName,
+                instanciation,
+                priority: serviceConfig.config?.priority || serviceMetas.priority || 0,
+                subservices: sortedSubservices
+            };
         }
 
         const servicesCode = Object.values(app.registered).map( s => refService(s.name, s, 0));
         const sortedServices = servicesCode.sort((a, b) => a.priority - b.priority);
-        
-        const services = sortedServices.map(s => s.code).join('\n');
-        const servicesNames = sortedServices.map(s => s.name);
 
         // Define the app class identifier
         const appClassIdentifier = app.identity.identifier;
@@ -300,15 +301,19 @@ ${imported.join('\n')}
 
 export default class ${appClassIdentifier} extends Application {
 
-    protected serviceNames = [
-        ${Object.values(servicesNames).map(name => `"${name}"`).join(',\n')}
-    ] as const;
+    ${sortedServices.map(service => 
+        `public ${service.name}!: ReturnType<${appClassIdentifier}["registered"]["${service.id}"]["start"]>;`
+    ).join('\n')}
 
-    protected servicesIdToName = {
-        ${Object.entries(referencedNames).map(([id, name]) => `"${id}": "${name}"`).join(',\n')}
+    protected registered = {
+        ${sortedServices.map(service => 
+            `"${service.id}": {
+                name: "${service.name}",
+                priority: ${service.priority},
+                start: () => ${service.instanciation}
+            }`
+        ).join(',\n')}
     } as const;
-
-    ${services}
 }
 
 

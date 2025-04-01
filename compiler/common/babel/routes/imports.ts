@@ -109,10 +109,10 @@ module.exports = (app: App, side: TAppSide, dev: boolean): ImportTransformer => 
             }
         }
         
-        console.log( generate(t.variableDeclaration("const", [t.variableDeclarator(
+        /*console.log( generate(t.variableDeclaration("const", [t.variableDeclarator(
             t.identifier(request.imported.name),
             t.objectExpression(pageLoaders)
-        )])).code );
+        )])).code );*/
 
         return [
             ...imports,

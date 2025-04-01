@@ -42,12 +42,14 @@ module.exports = (options: TOptions) => (
 const clientServices = ['Router'];
 // Others will be called via app.<Service> (backend) or api.post(<path>, <params>) (frontend)
 
+const routerMethods = ['get', 'post', 'put', 'delete', 'patch'];
+
 /*----------------------------------
 - PLUGIN
 ----------------------------------*/
 function Plugin(babel, { app, side, debug }: TOptions) {
 
-    debug = true;
+    //debug = true;
 
     const t = babel.types as typeof types;
 
@@ -154,7 +156,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                     && 
                     callee.property.type === 'Identifier' 
                     && 
-                    ['page', 'error', 'get', 'post', 'put', 'delete'].includes(callee.property.name)
+                    ['page', 'error', ...routerMethods].includes(callee.property.name)
                 ) {
 
                     // Should be at the root of the document
@@ -357,7 +359,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
         // Generate page chunk id
         const { filepath, chunkId } = cli.paths.getPageChunk(app, filename);
-        debug && console.log(`[routes]`, filename, '=>', chunkId);
+        debug && console.log(`[routes]`, filename.replace(cli.paths.appRoot + '/client/pages', ''));
 
         // Create new options to add in route.options
         const newProperties = [
