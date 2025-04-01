@@ -29,6 +29,14 @@ type TServiceMetas = {
     priority: number
 }
 
+type TRegisteredService = {
+    id?: string,
+    name: string,
+    instanciation: (parentRef: string) => string,
+    priority: number,
+    subservices?: string[]
+}
+
 /*----------------------------------
 - FONCTION
 ----------------------------------*/
@@ -183,13 +191,13 @@ export default class Compiler {
         const imported: string[] = []
         const referencedNames: {[serviceId: string]: string} = {} // ID to Name
 
-        const refService = (serviceName: string, serviceConfig: any, level: number = 0) => {
+        const refService = (serviceName: string, serviceConfig: any, level: number = 0): TRegisteredService => {
 
             if (serviceConfig.refTo !== undefined) {
                 const refTo = serviceConfig.refTo;
                 return {
                     name: serviceName,
-                    code: `${serviceName}: this.${refTo},`,
+                    instanciation: (parentRef: string) => `this.${refTo}`,
                     priority: 0
                 }
             }
@@ -209,8 +217,8 @@ export default class Compiler {
                 referencedNames[serviceConfig.id] = serviceConfig.name;
 
             // Subservices
-            let subservices = '';
-            let sortedSubservices = [];
+            let subservices: string = '';
+            let sortedSubservices: TRegisteredService[] = [];
             if (serviceConfig.subservices) {
 
                 const subservicesList = serviceConfig.subservices;
@@ -222,18 +230,19 @@ export default class Compiler {
                 sortedSubservices = subservicesCode.sort((a, b) => a.priority - b.priority);
 
                 // Generate code
-                subservices = sortedSubservices.map(s => `${s.name}: ${s.instanciation},`).join('\n');
+                subservices = sortedSubservices.map(s => `${s.name}: ${s.instanciation('instance')},`).join('\n');
             }
 
             // Generate the service instance
-            const instanciation = `new ${serviceMetas.name}( 
-                this, 
-                ${serialize(serviceConfig.config || {}) || '{}'}, 
-                () => ({
-                    ${subservices}
-                }), 
-                this 
-            )`
+            const instanciation = (parentRef: string) => 
+                `new ${serviceMetas.name}( 
+                    ${parentRef}, 
+                    ${serialize(serviceConfig.config || {}) || '{}'}, 
+                    (instance: ${serviceMetas.name}) => ({
+                        ${subservices}
+                    }), 
+                    this 
+                )`
 
             return {
                 id: serviceConfig.id,
@@ -310,7 +319,7 @@ export default class ${appClassIdentifier} extends Application {
             `"${service.id}": {
                 name: "${service.name}",
                 priority: ${service.priority},
-                start: () => ${service.instanciation}
+                start: () => ${service.instanciation('this')}
             }`
         ).join(',\n')}
     } as const;

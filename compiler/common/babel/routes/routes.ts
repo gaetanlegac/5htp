@@ -466,10 +466,6 @@ function Plugin(babel, { app, side, debug }: TOptions) {
     function wrapRouteDefs( file: TFileInfos ) {
 
         const importedServicesList = Object.entries(file.importedServices);
-
-        if (file.path.includes('/routes/csm/missions.ts'))
-            console.log("--------WRAP ROUTE DEFS", file.path, importedServicesList.length);
-
         if (importedServicesList.length === 0)
             return;
 
@@ -579,7 +575,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
             );
                     
 
-        /*(file.path.includes('platform/server/routes/csm/missions.ts')) 
+        /*(file.path.includes('client/pages/convert/auth/login.tsx')) 
         && console.log( file.path, generate(exportDeclaration).code );*/
 
         return exportDeclaration;

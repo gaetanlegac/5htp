@@ -87,8 +87,6 @@ function Plugin(babel, { app, side, debug }: TOptions) {
             this.processFile = (
                 this.filename.startsWith(cli.paths.appRoot + '/server/config')
                 ||
-                this.filename.startsWith(cli.paths.appRoot + '/server/routes')
-                ||
                 this.filename.startsWith(cli.paths.appRoot + '/server/services')
             );
 
