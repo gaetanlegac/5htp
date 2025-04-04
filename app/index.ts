@@ -24,11 +24,13 @@ type TServiceSetup = {
     id: string,
     name: string,
     config: {},
-    subservices: TServiceSubservices
+    subservices: TServiceSubservices,
+    type: 'service.setup'
 }
 
 type TServiceRef = {
-    refTo: string
+    refTo: string,
+    type: 'service.ref'
 }
 
 type TServiceSubservices = {
@@ -134,6 +136,7 @@ export class App {
 
         return {
             refTo: referenceName,
+            type: 'service.ref'
         }
     }
 
@@ -141,21 +144,19 @@ export class App {
         // { user: app.setup('Core/User') }
         servicePath: string,
         serviceConfig?: {},
-        serviceSubservices?: TServiceSubservices
     ] | [
         // app.setup('User', 'Core/User')
         serviceName: string, 
         servicePath: string,
         serviceConfig?: {},
-        serviceSubservices?: TServiceSubservices
     ]): TServiceSetup {
 
         // Registration to app root
         if (typeof args[1] === 'string') {
             
-            const [name, id, config, subservices] = args;
+            const [name, id, config] = args;
 
-            const service = { id, name, config, subservices } as TServiceSetup
+            const service = { id, name, config, type: 'service.setup' } as TServiceSetup
 
             this.registered[name] = service;
 
@@ -164,9 +165,9 @@ export class App {
         // Scoped to a parent service
         } else {
 
-            const [id, config, subservices] = args;
+            const [id, config] = args;
 
-            const service = { id, config, subservices } as TServiceSetup
+            const service = { id, config, type: 'service.setup' } as TServiceSetup
 
             return service;
         }
@@ -181,27 +182,6 @@ export class App {
             console.log("Loading config file:", configFile);
             require( path.resolve(configDir, configFile) );
         }
-
-        // Wait 2 seconds
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Load subservices
-        // for (const serviceName in this.registered) {
-        //     const service = this.registered[serviceName];
-
-        //     const subservices = {}
-        //     if (service.subservices) {
-        //         const list = service.subservices( this.registered );
-        //         for (const subservice of list) {
-
-        //             subservices[subservice.name] = list[];
-                    
-        //         }
-        //     }
-        //     service.subservices = subservices;
-        // }
-
-        // console.log("SERVICES", this.registered);
     }
 }
 

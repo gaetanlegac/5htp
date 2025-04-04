@@ -34,7 +34,6 @@ type TRegisteredService = {
     name: string,
     instanciation: (parentRef: string) => string,
     priority: number,
-    subservices?: string[]
 }
 
 /*----------------------------------
@@ -216,31 +215,37 @@ export default class Compiler {
             if (serviceConfig.name !== undefined)
                 referencedNames[serviceConfig.id] = serviceConfig.name;
 
-            // Subservices
-            let subservices: string = '';
-            let sortedSubservices: TRegisteredService[] = [];
-            if (serviceConfig.subservices) {
+            const processConfig = (config: any, level: number = 0) => {
 
-                const subservicesList = serviceConfig.subservices;
-                const subservicesCode = Object.entries(subservicesList).map(([name, service]) => 
-                    refService(name, service, level + 1) 
-                );
+                let propsStr = '';
+                for (const key in config) {
+                    const value = config[key];
 
-                // Sort by priority
-                sortedSubservices = subservicesCode.sort((a, b) => a.priority - b.priority);
+                    if (!value || typeof value !== 'object')
+                        propsStr += `"${key}":${serialize(value, { space: 4 })},\n`;
 
-                // Generate code
-                subservices = sortedSubservices.map(s => `${s.name}: ${s.instanciation('instance')},`).join('\n');
+                    // Reference to a service
+                    else if (value.type === 'service.setup' || value.type === 'service.ref') // TODO: more reliable way to detect a service reference
+                        propsStr += `${key}:`+ refService(key, value, level + 1).instanciation('instance') + ',\n'
+                    
+                    // Recursion
+                    else if (level <= 4 && !Array.isArray(value))
+                        propsStr += `"${key}":` + processConfig(value, level + 1) + ',\n';
+
+                    else
+                        propsStr += `"${key}":${serialize(value, { space: 4 })},\n`;
+
+                }
+
+                return `{ ${propsStr} }`;
             }
+            const config = processConfig(serviceConfig.config || {});
 
             // Generate the service instance
             const instanciation = (parentRef: string) => 
                 `new ${serviceMetas.name}( 
                     ${parentRef}, 
-                    ${serialize(serviceConfig.config || {}) || '{}'}, 
-                    (instance: ${serviceMetas.name}) => ({
-                        ${subservices}
-                    }), 
+                    (instance: ${serviceMetas.name}) => (${config}),
                     this 
                 )`
 
@@ -249,7 +254,6 @@ export default class Compiler {
                 name: serviceName,
                 instanciation,
                 priority: serviceConfig.config?.priority || serviceMetas.priority || 0,
-                subservices: sortedSubservices
             };
         }
 
