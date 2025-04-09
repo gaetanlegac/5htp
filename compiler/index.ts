@@ -17,6 +17,7 @@ import cli from '..';
 import createServerConfig from './server';
 import createClientConfig from './client';
 import { TCompileMode } from './common';
+import { routerServices } from './common/babel/plugins/services';
 
 type TCompilerCallback = (compiler: webpack.Compiler) => void
 
@@ -32,6 +33,7 @@ type TServiceMetas = {
 type TRegisteredService = {
     id?: string,
     name: string,
+    className: string,
     instanciation: (parentRef: string) => string,
     priority: number,
 }
@@ -253,6 +255,7 @@ export default class Compiler {
                 id: serviceConfig.id,
                 name: serviceName,
                 instanciation,
+                className: serviceMetas.name,
                 priority: serviceConfig.config?.priority || serviceMetas.priority || 0,
             };
         }
@@ -269,41 +272,29 @@ export default class Compiler {
             path.join( app.paths.client.generated, 'services.d.ts'),
 `declare module "@app" {
 
-    import { RouenEvents as RouenEventsClient } from "@/client";
-    import RouenEventsServer from "@/server/.generated/app";
+    import { ${appClassIdentifier} as ${appClassIdentifier}Client } from "@/client";
+    import ${appClassIdentifier}Server from "@/server/.generated/app";
     
     import { ApplicationProperties as ClientApplicationProperties } from "@client/app";
     import { ApplicationProperties as ServerApplicationProperties } from "@server/app";
 
-    type ClientServices = Omit<RouenEventsClient, ClientApplicationProperties>;
-    type ServerServices = Omit<RouenEventsServer, ServerApplicationProperties | keyof ClientServices>;
+    type ClientServices = Omit<${appClassIdentifier}Client, ClientApplicationProperties>;
+    type ServerServices = Omit<${appClassIdentifier}Server, ServerApplicationProperties | keyof ClientServices>;
   
     type CombinedServices = ClientServices & ServerServices;
   
     const appClass: CombinedServices;
     export = appClass;
 }
-
-
-// Temporary
-/*declare module '@models' {
+    
+declare module '@models/types' {
     export * from '@/var/prisma/index';
-}*/
-  
-declare module '@models' {
-    import { Prisma, PrismaClient } from '@/var/prisma/index';
-  
-    type ModelNames = Prisma.ModelName;
-  
-    type ModelDelegates = {
-        [K in ModelNames]: PrismaClient[Uncapitalize<K>];
-    };
-  
-    const models: ModelDelegates;
-  
-    export = models;
 }
-  `
+
+declare module '@request' {
+    
+}
+`
         );
 
         fs.outputFileSync(
@@ -315,7 +306,7 @@ ${imported.join('\n')}
 export default class ${appClassIdentifier} extends Application {
 
     ${sortedServices.map(service => 
-        `public ${service.name}!: ReturnType<${appClassIdentifier}["registered"]["${service.id}"]["start"]>;`
+        `public ${service.name}!: ${service.className};`
     ).join('\n')}
 
     protected registered = {
@@ -373,6 +364,12 @@ declare module '@server/app' {
 
     export = foo;
 }
+
+declare module '@request' {
+    import type { TRouterContext } from '@server/services/router/response';
+    const routerContext: TRouterContext<CrossPath["Router"]>;
+    export = routerContext;
+}
     
 declare module '@models' {
     import { Prisma, PrismaClient } from '@/var/prisma/index';
@@ -386,6 +383,10 @@ declare module '@models' {
     const models: ModelDelegates;
   
     export = models;
+}
+    
+declare module '@models/types' {
+    export * from '@/var/prisma/index';
 }`
         );
     }

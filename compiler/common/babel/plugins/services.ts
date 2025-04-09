@@ -4,7 +4,8 @@
 
 // Npm
 import * as types from '@babel/types'
-import type { PluginObj } from '@babel/core';
+import type { NodePath, PluginObj } from '@babel/core';
+import generate from '@babel/generator';
 
 // Core
 import cli from '@cli';
@@ -24,11 +25,18 @@ type TOptions = {
  * Extended source type: now includes "models"
  * so we can differentiate how we rewrite references.
  */
-type TImportSource = 'container' | 'application' | 'models';
+type TImportSource = 'container' | 'services' | 'models' | 'request';
 
 module.exports = (options: TOptions) => (
     [Plugin, options]
 )
+
+type TImportedIndex = {
+    local: string,
+    imported: string,                // The original “imported” name
+    references: NodePath<types.Node>[],                   // reference paths
+    source: TImportSource            // container | application | models
+}
 
 /*----------------------------------
 - PLUGIN
@@ -54,8 +62,6 @@ function Plugin(babel, { app, side, debug }: TOptions) {
           this.app.Models.client.MyModel.someCall();
   
         Processed files:
-          @/server/config
-          @/server/routes
           @/server/services
     */
 
@@ -68,39 +74,64 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
         // Count how many total imports we transform
         importedCount: number,
+        routeMethods: string[],
 
         // For every local identifier, store info about how it should be rewritten
-        importedReferences: {
-            [localName: string]: {
-                imported: string,                // The original “imported” name
-                bindings: any,                   // reference paths
-                source: TImportSource            // container | application | models
-            }
+        imported: {
+            [localName: string]: TImportedIndex
         }
-
-        // Tally how many references per kind
-        bySource: { [s in TImportSource]: number }
     }> = {
 
         pre(state) {
             this.filename = state.opts.filename as string;
-            this.processFile = (
-                this.filename.startsWith(cli.paths.appRoot + '/server/config')
-                ||
-                this.filename.startsWith(cli.paths.appRoot + '/server/services')
-            );
+            this.processFile = this.filename.startsWith(cli.paths.appRoot + '/server/services');
 
-            this.importedReferences = {};
-            this.bySource = {
-                container: 0,
-                application: 0,
-                models: 0
-            };
+            this.imported = {};
+            
             this.importedCount = 0;
             this.debug = debug || false;
+
+            this.routeMethods = [];
         },
 
         visitor: {
+
+            // Detect decored methods before other plugins remove decorators
+            Program(path) {
+
+                if (!this.processFile) return;
+
+                // Traverse the AST within the Program node
+                path.traverse({
+                    ClassMethod: (subPath) => {
+                        const { node } = subPath;
+                        if (!node.decorators || node.key.type !== 'Identifier') return;
+
+                        for (const decorator of node.decorators) {
+
+                            const isRoute = (
+                                // Handles the case of @Route without parameters
+                                (
+                                    t.isIdentifier(decorator.expression) && decorator.expression.name === 'Route'
+                                ) 
+                                || 
+                                // Handles the case of @Route() with parameters
+                                (
+                                    t.isCallExpression(decorator.expression) &&
+                                    t.isIdentifier(decorator.expression.callee) &&
+                                    decorator.expression.callee.name === 'Route'
+                                )
+                            );
+
+                            if (!isRoute) continue;
+
+                            const methodName = node.key.name;
+                            this.routeMethods.push( methodName );
+
+                        }
+                    }
+                });
+            },
 
             /**
              * Detect import statements from '@app' or '@models'
@@ -109,7 +140,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                 if (!this.processFile) return;
 
                 const source = path.node.source.value;
-                if (source !== '@app' && source !== '@models') {
+                if (source !== '@app' && source !== '@models' && source !== '@request') {
                     return;
                 }
 
@@ -121,25 +152,32 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                     this.importedCount++;
 
                     let importSource: TImportSource;
-                    if (source === '@app') {
-                        // Distinguish whether it's a container service or an application service
-                        if (app.containerServices.includes(specifier.imported.name)) {
-                            importSource = 'container';
-                        } else {
-                            importSource = 'application';
-                        }
-                    } else {
-                        // source === '@models'
-                        importSource = 'models';
+                    switch (source) {
+                        case '@app':
+                            // Distinguish whether it's a container service or an application service
+                            if (app.containerServices.includes(specifier.imported.name)) {
+                                importSource = 'container';
+                            } else {
+                                importSource = 'services';
+                            }
+                            break;
+                        case '@request':
+                            importSource = 'request';
+                            break;
+                        case '@models':
+                            // source === '@models'
+                            importSource = 'models';
+                            break;
+                        default:
+                            throw new Error(`Unknown import source: ${source}`);
                     }
 
-                    this.importedReferences[specifier.local.name] = {
+                    this.imported[specifier.local.name] = {
+                        local: specifier.local.name,
                         imported: specifier.imported.name,
-                        bindings: path.scope.bindings[specifier.local.name].referencePaths,
+                        references: path.scope.bindings[specifier.local.name].referencePaths,
                         source: importSource
                     };
-
-                    this.bySource[importSource]++;
                 }
 
                 // Remove the original import line(s) and replace with any needed new import
@@ -149,7 +187,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
                 // If this line had container references, add a default import for container
                 // Example: import container from '<root>/server/app/container'
-                if (source === '@app' && this.bySource.container > 0) {
+                if (source === '@app') {
                     replaceWith.push(
                         t.importDeclaration(
                             [t.importDefaultSpecifier(t.identifier('container'))],
@@ -165,78 +203,124 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                 path.replaceWithMultiple(replaceWith);
             },
 
-            /**
-             * Rewrite references to the imports
-             */
-            Identifier(path) {
-                if (!this.processFile || this.importedCount === 0) {
-                    return;
-                }
+            // This visitor fires for every class method.
+            ClassMethod(path) {
 
-                const name = path.node.name;
-                const ref = this.importedReferences[name];
-                if (!ref || !ref.bindings) {
-                    return;
-                }
+                // Must be a server service
+                if (!this.processFile || path.replaced) return;
 
-                // Find a specific binding that hasn't been replaced yet
-                let foundBinding = undefined;
-                for (const binding of ref.bindings) {
-                    if (!binding.replaced && path.getPathLocation() === binding.getPathLocation()) {
-                        foundBinding = binding;
-                        break;
+                // Must have a method name
+                if (path.node.key.type !== 'Identifier') return;
+
+                // Init context
+                const methodName = path.node.key.name;
+                let params = path.node.params;
+
+                // Prefix references
+                path.traverse({ Identifier: (subPath) => {
+
+                    const { node } = subPath;
+                    const name = node.name;
+                    const ref = this.imported[name];
+                    if (!ref || !ref.references) {
+                        return;
                     }
-                }
-                if (!foundBinding) {
-                    return;
-                }
 
-                // Mark as replaced to avoid loops
-                foundBinding.replaced = true;
+                    // Find a specific binding that hasn't been replaced yet
+                    const foundBinding = ref.references.find(binding => {
+                        return subPath.getPathLocation() === binding.getPathLocation();
+                    });
 
-                // Based on the source, replace the identifier with the proper MemberExpression
-                if (ref.source === 'container') {
-                    // container.[identifier]
-                    // e.g. container.Environment
-                    path.replaceWith(
-                        t.memberExpression(
-                            t.identifier('container'),
-                            path.node
-                        )
-                    );
-                }
-                else if (ref.source === 'application') {
-                    // this.app.[identifier]
-                    // e.g. this.app.MyService
-                    path.replaceWith(
-                        t.memberExpression(
+                    if (!foundBinding || foundBinding.replaced)
+                        return;
+
+                    // Mark as replaced to avoid loops
+                    foundBinding.replaced = true;
+
+                    // Based on the source, replace the identifier with the proper MemberExpression
+                    if (ref.source === 'container') {
+                        // container.[identifier]
+                        // e.g. container.Environment
+                        subPath.replaceWith(
                             t.memberExpression(
-                                t.thisExpression(),
-                                t.identifier('app')
-                            ),
-                            path.node
-                        )
-                    );
-                }
-                else if (ref.source === 'models') {
-                    // this.app.Models.client.[identifier]
-                    // e.g. this.app.Models.client.MyModel
-                    path.replaceWith(
-                        t.memberExpression(
+                                t.identifier('container'),
+                                subPath.node
+                            )
+                        );
+                    }
+                    else if (ref.source === 'services') {
+                        // this.app.[identifier]
+                        // e.g. this.app.MyService
+                        subPath.replaceWith(
+                            t.memberExpression(
+                                t.memberExpression(
+                                    t.thisExpression(),
+                                    t.identifier('app')
+                                ),
+                                subPath.node
+                            )
+                        );
+                    }
+                    else if (ref.source === 'models') {
+                        // this.app.Models.client.[identifier]
+                        // e.g. this.app.Models.client.MyModel
+                        subPath.replaceWith(
                             t.memberExpression(
                                 t.memberExpression(
                                     t.memberExpression(
-                                        t.thisExpression(),
-                                        t.identifier('app')
+                                        t.memberExpression(
+                                            t.thisExpression(),
+                                            t.identifier('app')
+                                        ),
+                                        t.identifier('Models')
                                     ),
-                                    t.identifier('Models')
+                                    t.identifier('client')
                                 ),
-                                t.identifier('client')
-                            ),
-                            path.node
+                                subPath.node
+                            )
+                        );
+                    }
+                    else if (ref.source === 'request') {
+                        // this.app.Models.client.[identifier]
+                        // e.g. this.app.Models.client.MyModel
+                        subPath.replaceWith(
+                            t.memberExpression(
+                                t.identifier('context'),
+                                subPath.node
+                            )
+                        );
+                    }
+
+                } });
+
+                if (
+                    this.routeMethods.includes(methodName) 
+                    && 
+                    path.node.params.length < 2
+                ) {
+
+                    // Expose router context variable via the second parameter
+                    params = [
+                        path.node.params[0] || t.objectPattern([]),
+                        t.identifier('context'),
+                    ];
+
+                    // Apply changes
+                    path.replaceWith(
+                        t.classMethod(
+                            path.node.kind,
+                            path.node.key,
+                            params,
+                            path.node.body,
+                            false,
+                            false,
+                            false,
+                            path.node.async
                         )
                     );
                 }
+
+                //console.log("ROUTE METHOD", this.filename, methodName, generate(path.node).code);
             }
         }
     };

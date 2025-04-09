@@ -173,6 +173,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                     }
 
                     // Adjust
+                    // /client/pages/*
                     if (this.file.side === 'front') {
                         transformDataFetchers(path, this, routeDef);
                     }
@@ -183,12 +184,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                     // Delete the route def since it will be replaced by a wrapper
                     path.replaceWithMultiple([]);
 
-                /* [client] Backend Service calls: Transform to api.post( <method path>, <params> )
-
-                    Events.Create( form.data ).then(res => toast.success(res.message))
-                    =>
-                    api.post( '/api/events/create', form.data ).then(res => toast.success(res.message))
-                */
+      
                 } else if (this.file.side === 'front') {
                     
                     const isAService = (
@@ -199,14 +195,20 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                     if(!isAService)
                         return;
 
-                    if (side === 'client') {
+                    /* [client] Backend Service calls: Transform to api.post( <method path>, <params> )
+
+                        Events.Create( form.data ).then(res => toast.success(res.message))
+                        =>
+                        api.post( '/api/events/create', form.data ).then(res => toast.success(res.message))
+                    */
+                    if (side === 'client' && !clientServices.includes(serviceName)) {
 
                         // Get complete call path
                         const apiPath = '/api/' + completePath.join('/');
                         
                         // Replace by api.post( <method path>, <params> )
                         const apiPostArgs: types.CallExpression["arguments"] = [t.stringLiteral(apiPath)];
-                        if (path.node.arguments.length === 1)
+                        if (path.node.arguments.length >= 1)
                             apiPostArgs.push( path.node.arguments[0] );
 
                         path.replaceWith(
@@ -216,6 +218,13 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                                 ), apiPostArgs
                             )
                         )
+
+                    /* [server] Backend Service calls
+
+                        Events.Create( form.data ).then(res => toast.success(res.message))
+                        =>
+                        app.Events.Create( form.data, context ).then(res => toast.success(res.message))
+                    */
                     } else {
 
                         // Rebuild member expression from completePath, adding a api prefix
@@ -233,7 +242,8 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                         // Replace by app.<service>.<method>(...)
                         path.replaceWith(
                             t.callExpression(
-                                newCallee, [...path.node.arguments]
+                                newCallee, 
+                                [...path.node.arguments]
                             )
                         )
                     }
@@ -322,7 +332,30 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                     }
                 */
                 routeDef.dataFetchers.push(
-                    ...path.node.arguments[0].properties
+                    ...path.node.arguments[0].properties.map(p => {
+
+                        // Server side: Pass request context as 2nd argument
+                        // companies: Companies.create( <params>, context )
+                        if (
+                            side === 'server'
+                            &&
+                            p.type === 'ObjectProperty'
+                            &&
+                            p.key.type === 'Identifier'
+                            &&
+                            p.value.type === 'CallExpression'
+                        ) {
+
+                            // Pass request context as 2nd argument
+                            p.value.arguments = p.value.arguments.length === 0
+                                ? [ t.objectExpression([]), t.identifier('context') ]
+                                : [ p.value.arguments[0], t.identifier('context') ];
+
+                        }
+
+                        return p;
+
+                    })
                 );
 
                 /*  Replace the: 
@@ -376,9 +409,19 @@ function Plugin(babel, { app, side, debug }: TOptions) {
         // Add data fetchers
         if (routeDef.dataFetchers.length !== 0) {
 
+            const rendererContext = t.cloneNode( renderer.params[0] );
+            // If not already present, add context to the 1st argument (a object spread)
+            if (!rendererContext.properties.some( p => p.key.name === 'context' ))
+                rendererContext.properties.push(
+                    t.objectProperty(
+                        t.identifier('context'),
+                        t.identifier('context')
+                    )
+                )
+
             // (contollerParams) => { stats: api.get(...) }
             const dataFetchersFunc = t.arrowFunctionExpression(
-                renderer.params.map( param => t.cloneNode( param )),
+                [rendererContext],
                 t.objectExpression(
                     routeDef.dataFetchers.map( df => t.cloneNode( df ))
                 )
@@ -530,6 +573,10 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                 t.objectProperty(
                     t.identifier('app'),
                     t.identifier('app'),
+                ),
+                t.objectProperty(
+                    t.identifier('context'),
+                    t.identifier('context'),
                 )
             ]
             for (const [local, imported] of importedServicesList) {
@@ -575,8 +622,8 @@ function Plugin(babel, { app, side, debug }: TOptions) {
             );
                     
 
-        /*(file.path.includes('client/pages/convert/auth/login.tsx')) 
-        && console.log( file.path, generate(exportDeclaration).code );*/
+        // (file.path.includes('clients/prospect/search') && side === 'client') 
+        // && console.log( file.path, generate(exportDeclaration).code );
 
         return exportDeclaration;
     }
