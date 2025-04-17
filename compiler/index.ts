@@ -294,8 +294,44 @@ declare module '@models/types' {
 declare module '@request' {
     
 }
+
+declare namespace preact.JSX {
+    interface HTMLAttributes {
+        src?: string;
+    }
+}
 `
         );
+
+        fs.outputFileSync(
+            path.join( app.paths.client.generated, 'context.ts'),
+`// TODO: move it into core (but how to make sure usecontext returns ${appClassIdentifier}'s context ?)
+import React from 'react';
+
+import type ${appClassIdentifier}Server from '@/server/.generated/app';
+import type { TRouterContext as TServerRouterRequestContext } from '@server/services/router/response';
+import type { TRouterContext as TClientRouterRequestContext } from '@client/services/router/response';
+import type ${appClassIdentifier}Client from '.';
+
+// TO Fix: TClientRouterRequestContext is unable to get the right type of ${appClassIdentifier}Client["router"]
+    //    (it gets ClientApplication instead of ${appClassIdentifier}Client)
+type ClientRequestContext = TClientRouterRequestContext<${appClassIdentifier}Client["Router"], ${appClassIdentifier}Client>;
+type ServerRequestContext = TServerRouterRequestContext<${appClassIdentifier}Server["Router"]>
+type UniversalServices = ClientRequestContext | ServerRequestContext
+
+// Non-universla services are flagged as potentially undefined
+export type ClientContext = (
+    UniversalServices 
+    & 
+    Partial<Omit<ClientRequestContext, keyof UniversalServices>>
+    &
+    {
+        Router: ${appClassIdentifier}Client["Router"],
+    }
+)
+
+export const ReactClientContext = React.createContext<ClientContext>({} as ClientContext);
+export default (): ClientContext => React.useContext<ClientContext>(ReactClientContext);`);
 
         fs.outputFileSync(
             path.join( app.paths.server.generated, 'app.ts'),
