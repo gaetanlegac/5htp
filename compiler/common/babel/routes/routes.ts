@@ -344,8 +344,17 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                             p.key.type === 'Identifier'
                             &&
                             p.value.type === 'CallExpression'
+                            && 
+                            // TODO: reliable way to know if it's a service
+                            !(
+                                p.value.callee.type === 'MemberExpression'
+                                &&
+                                p.value.callee.object.type === 'Identifier'
+                                &&
+                                p.value.callee.object.name === 'api'
+                            )
                         ) {
-
+                            
                             // Pass request context as 2nd argument
                             p.value.arguments = p.value.arguments.length === 0
                                 ? [ t.objectExpression([]), t.identifier('context') ]
