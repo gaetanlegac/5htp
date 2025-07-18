@@ -365,6 +365,29 @@ export default class ${appClassIdentifier} extends Application {
 
 declare type ${appClassIdentifier} = import("@/server/.generated/app").default;
 
+declare module '@cli/app' {
+
+    type App = {
+
+        env: TEnvConfig;
+
+        use: (referenceName: string) => TServiceRef;
+
+        setup: <TServiceName extends keyof ${appClassIdentifier}>(...args: [
+            // { user: app.setup('Core/User') }
+            servicePath: string,
+            serviceConfig?: {}
+        ] | [
+            // app.setup('User', 'Core/User')
+            serviceName: TServiceName, 
+            servicePath: string,
+            serviceConfig?: ${appClassIdentifier}[TServiceName]["config"]
+        ]) => TServiceSetup;
+    }
+    const app: App;
+    export = app;
+}
+
 declare module "@app" {
 
     import { ApplicationContainer } from '@server/app/container';
