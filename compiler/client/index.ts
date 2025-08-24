@@ -312,22 +312,16 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                         new CssMinimizerPlugin()
                     ]),
 
-                    // BUG: Essai de charger les plugins depuis app/node_modules
-                    //      Et la specification via require() ne sembl epas être supportée ...
-                    // https://webpack.js.org/plugins/image-minimizer-webpack-plugin/
                     /*new ImageMinimizerPlugin({
+                        // (optional) add generators; you can also just import &format=webp (see below)
                         generator: [
                             {
-                                // You can apply generator using `?as=webp`, you can use any name and provide more options
                                 preset: "webp",
                                 implementation: ImageMinimizerPlugin.imageminGenerate,
-                                options: {
-                                    // Please specify only one plugin here, multiple plugins will not work
-                                    plugins: ["imagemin-webp"],
-                                },
-                            },
-                        ],
-                    }),*/
+                                options: { plugins: ["imagemin-webp"] }
+                            }
+                        ]
+                    })*/
                 ],
                 nodeEnv: 'production',
                 sideEffects: true,
