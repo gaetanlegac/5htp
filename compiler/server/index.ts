@@ -15,7 +15,7 @@ import cli from '@cli';
 import createCommonConfig, { TCompileMode, regex } from '../common';
 
 // Type
-import type App from '../../app';
+import type { App } from '../../app';
 
 /*const getCorePluginsList = (app: App,) => {
 

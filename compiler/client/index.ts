@@ -27,7 +27,7 @@ import identityAssets from './identite';
 import cli from '../..';
 
 // Type
-import type App from '../../app';
+import type { App } from '../../app';
 
 const debug = false;
 

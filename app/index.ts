@@ -51,6 +51,8 @@ export class App {
 
     public packageJson: {[key: string]: any};
 
+    public buildId: number = Date.now();
+
     public paths = {
 
         root: cli.paths.appRoot,

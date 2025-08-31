@@ -34,7 +34,7 @@ export default class IconesSVG extends Indexeur {
     private cacheTypes: string;
     private cacheIndex: string;
 
-    public constructor( app: App, private buildId: number, private debug?: boolean ) {
+    public constructor( private app: App, private debug?: boolean ) {
         super();
 
         this.formats = ['woff2'];
@@ -182,7 +182,7 @@ export default class IconesSVG extends Indexeur {
         // Enregistrement fichiers
         for (const format of this.formats)
             fs.outputFileSync(this.dossierSortie + 'icons.' + format, result[ format ]);
-        fs.outputFileSync(this.dossierSortie + 'icons.css', result.template?.replace('icons.woff2', 'icons.woff2?' + this.buildId));
+        fs.outputFileSync(this.dossierSortie + 'icons.css', result.template?.replace('icons.woff2', 'icons.woff2?' + this.app.buildId));
 
         fs.outputFileSync(this.cacheTypes, 'export type TIcones = ' + typeIcones.join('|') );
 
