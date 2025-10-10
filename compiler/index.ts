@@ -267,7 +267,7 @@ export default class Compiler {
         const appClassIdentifier = app.identity.identifier;
         const containerServices = app.containerServices.map( s => "'" + s + "'").join('|');
 
-        // Output the services index
+        // @/client/.generated/services.d.ts
         fs.outputFileSync(
             path.join( app.paths.client.generated, 'services.d.ts'),
 `declare module "@app" {
@@ -303,6 +303,7 @@ declare namespace preact.JSX {
 `
         );
 
+        // @/client/.generated/context.ts
         fs.outputFileSync(
             path.join( app.paths.client.generated, 'context.ts'),
 `// TODO: move it into core (but how to make sure usecontext returns ${appClassIdentifier}'s context ?)
@@ -333,6 +334,15 @@ export type ClientContext = (
 export const ReactClientContext = React.createContext<ClientContext>({} as ClientContext);
 export default (): ClientContext => React.useContext<ClientContext>(ReactClientContext);`);
 
+        // @/common/.generated/services.d.ts
+        fs.outputFileSync(
+            path.join( app.paths.common.generated, 'services.d.ts'),
+`declare module '@models/types' {
+    export * from '@/var/prisma/index';
+}`
+        );
+
+        // @/server/.generated/app.ts
         fs.outputFileSync(
             path.join( app.paths.server.generated, 'app.ts'),
 `import { Application } from '@server/app/index';
@@ -359,6 +369,7 @@ export default class ${appClassIdentifier} extends Application {
 
 `);
 
+        // @/server/.generated/services.d.ts
         fs.outputFileSync(
             path.join( app.paths.server.generated, 'services.d.ts'),
 `type InstalledServices = import('./services').Services;

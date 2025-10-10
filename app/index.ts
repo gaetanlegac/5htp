@@ -69,7 +69,10 @@ export class App {
             generated: path.join( cli.paths.appRoot, 'server', '.generated'),
             configs: path.join( cli.paths.appRoot, 'server', 'app')
         },
-
+        common: {
+            generated: path.join( cli.paths.appRoot, 'common', '.generated')
+        },
+        
         withAlias: (filename: string, side: TAppSide) => 
             this.aliases[side].apply(filename),
 
