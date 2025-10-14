@@ -34,13 +34,13 @@ module.exports = (app: App, dev: Boolean, client: boolean) => {
 
         // Postcss
         {
-            loader: require.resolve( app.paths.root + '/node_modules/postcss-loader'),
+            loader: 'postcss-loader',
             options: {
                 postcssOptions: {
                     plugins: [
                         /* Tailwind V4 *///'@tailwindcss/postcss',
-                        /* Tailwind V3 */require(require.resolve(app.paths.root + '/node_modules/tailwindcss')),
-                        require(require.resolve(app.paths.root + '/node_modules/autoprefixer')),
+                        /* Tailwind V3 */require('tailwindcss'),
+                        require('autoprefixer'),
                     ],
                 },
             },
