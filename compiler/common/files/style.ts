@@ -1,11 +1,7 @@
 // Plugons
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
-import lessToJs from 'less-vars-to-js';
 
-import fs from 'fs-extra';
-import cli from '@cli';
-
-import type App from '../../../app';
+import type { App } from '../../../app';
 
 module.exports = (app: App, dev: Boolean, client: boolean) => {
 
@@ -31,8 +27,22 @@ module.exports = (app: App, dev: Boolean, client: boolean) => {
             loader: 'css-loader',
             options: {
                 // CSS Loader https://github.com/webpack/css-loader
-                importLoaders: 1,
+                importLoaders: 1, // let postcss run on @imports
                 sourceMap: dev
+            },
+        },
+
+        // Postcss
+        {
+            loader: require.resolve( app.paths.root + '/node_modules/postcss-loader'),
+            options: {
+                postcssOptions: {
+                    plugins: [
+                        /* Tailwind V4 *///'@tailwindcss/postcss',
+                        /* Tailwind V3 */require(require.resolve(app.paths.root + '/node_modules/tailwindcss')),
+                        require(require.resolve(app.paths.root + '/node_modules/autoprefixer')),
+                    ],
+                },
             },
         },
 
