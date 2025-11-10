@@ -247,7 +247,7 @@ export default class Compiler {
             const instanciation = (parentRef: string) => 
                 `new ${serviceMetas.name}( 
                     ${parentRef}, 
-                    (instance: ${serviceMetas.name}) => (${config}),
+                    (instance/*: ${app.identity.identifier}["${serviceMetas.name}"]*/) => (${config}),
                     this 
                 )`
 
@@ -351,8 +351,9 @@ ${imported.join('\n')}
 
 export default class ${appClassIdentifier} extends Application {
 
+    // Makke sure the services typigs are reflecting the config and referring to the app
     ${sortedServices.map(service => 
-        `public ${service.name}!: ${service.className};`
+        `public ${service.name}!: ReturnType<${appClassIdentifier}["registered"]["${service.id}"]["start"]>;`
     ).join('\n')}
 
     protected registered = {
