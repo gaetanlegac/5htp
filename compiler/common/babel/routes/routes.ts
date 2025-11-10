@@ -290,7 +290,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
         }
         
         // Differenciate back / front
-        if (relativeFileName.startsWith('/client/pages') || relativeFileName.startsWith('/client/components')) {
+        if (relativeFileName.startsWith('/client/pages') || relativeFileName.startsWith('/client/components') || relativeFileName.startsWith('/client/hooks')) {
             file.side = 'front';
         } else if (relativeFileName.startsWith('/server/routes')) {
             file.side = 'back';
