@@ -34,7 +34,7 @@ type TRegisteredService = {
     id?: string,
     name: string,
     className: string,
-    instanciation: (parentRef: string) => string,
+    instanciation: (parentRef?: string) => string,
     priority: number,
 }
 
@@ -198,7 +198,7 @@ export default class Compiler {
                 const refTo = serviceConfig.refTo;
                 return {
                     name: serviceName,
-                    instanciation: (parentRef: string) => `this.${refTo}`,
+                    instanciation: () => `this.${refTo}`,
                     priority: 0
                 }
             }
@@ -228,7 +228,7 @@ export default class Compiler {
 
                     // Reference to a service
                     else if (value.type === 'service.setup' || value.type === 'service.ref') // TODO: more reliable way to detect a service reference
-                        propsStr += `${key}:`+ refService(key, value, level + 1).instanciation('instance') + ',\n'
+                        propsStr += `${key}:`+ refService(key, value, level + 1).instanciation() + ',\n'
                     
                     // Recursion
                     else if (level <= 4 && !Array.isArray(value))
@@ -244,10 +244,10 @@ export default class Compiler {
             const config = processConfig(serviceConfig.config || {});
 
             // Generate the service instance
-            const instanciation = (parentRef: string) => 
+            const instanciation = (parentRef?: string) => 
                 `new ${serviceMetas.name}( 
-                    ${parentRef}, 
-                    (instance/*: ${app.identity.identifier}["${serviceMetas.name}"]*/) => (${config}),
+                    ${parentRef ? `${parentRef},` : ''}
+                    ${config},
                     this 
                 )`
 
