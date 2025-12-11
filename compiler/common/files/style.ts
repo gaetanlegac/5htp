@@ -38,8 +38,8 @@ module.exports = (app: App, dev: Boolean, client: boolean) => {
             options: {
                 postcssOptions: {
                     plugins: [
-                        /* Tailwind V4 *///'@tailwindcss/postcss',
-                        /* Tailwind V3 */require('tailwindcss'),
+                        /* Tailwind V4 */'@tailwindcss/postcss',
+                        ///* Tailwind V3 */require('tailwindcss'),
                         require('autoprefixer'),
                     ],
                 },
