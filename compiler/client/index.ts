@@ -37,7 +37,7 @@ const debug = false;
 export default function createCompiler( app: App, mode: TCompileMode ): webpack.Configuration {
 
     console.info(`Creating compiler for client (${mode}).`);
-    const dev = mode === 'dev';
+    const dev = true;//mode === 'dev';
 
     const commonConfig = createCommonConfig(app, 'client', mode);
 
@@ -126,7 +126,7 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                 // On ne compile les ressources (css) qu'une seule fois
                 {
                     test: regex.style,
-                    rules: require('../common/files/style')(app, true, dev),
+                    rules: require('../common/files/style')(app, dev, true),
 
                     // Don't consider CSS imports dead code even if the
                     // containing package claims to have no side effects.

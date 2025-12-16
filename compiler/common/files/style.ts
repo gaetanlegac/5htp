@@ -38,7 +38,14 @@ module.exports = (app: App, dev: Boolean, client: boolean) => {
             options: {
                 postcssOptions: {
                     plugins: [
-                        /* Tailwind V4 */'@tailwindcss/postcss',
+                        /* Tailwind V4 */require('@tailwindcss/postcss')({
+                            // Ensure Tailwind scans the application sources even if the build
+                            // process is launched from another working directory (e.g. Docker).
+                            base: app.paths.root,
+
+                            // Avoid double-minifying: Webpack already runs CssMinimizerPlugin in prod.
+                            optimize: false,
+                        }),
                         ///* Tailwind V3 */require('tailwindcss'),
                         require('autoprefixer'),
                     ],
