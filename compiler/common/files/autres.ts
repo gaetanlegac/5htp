@@ -24,7 +24,7 @@ module.exports = (app: App, dev: boolean, client: boolean) => ([
     // Texte brut
     {
         type: 'asset/source',
-        test: /\.(md|hbs|sql|txt|csv)$/,
+        test: /\.(md|hbs|sql|txt|csv|html)$/,
     },
 
     // Polices dans un fichier distinc dans le dossier dédié
