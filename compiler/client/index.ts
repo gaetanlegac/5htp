@@ -37,7 +37,7 @@ const debug = false;
 export default function createCompiler( app: App, mode: TCompileMode ): webpack.Configuration {
 
     console.info(`Creating compiler for client (${mode}).`);
-    const dev = true;//mode === 'dev';
+    const dev = mode === 'dev';
 
     const commonConfig = createCommonConfig(app, 'client', mode);
 
@@ -308,9 +308,9 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                         }
                     }),
 
-                    ...(dev ? [] : [
+                    /*...(dev ? [] : [
                         new CssMinimizerPlugin()
-                    ]),
+                    ]),*/
 
                     /*new ImageMinimizerPlugin({
                         // (optional) add generators; you can also just import &format=webp (see below)
