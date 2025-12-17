@@ -1,7 +1,7 @@
 {
 	"name": "5htp",
 	"description": "Convenient TypeScript framework designed for Performance and Productivity.",
-	"version": "0.6.2-98",
+	"version": "0.6.2-99",
 	"author": "Gaetan Le Gac (https://github.com/gaetanlegac)",
 	"repository": "git://github.com/gaetanlegac/5htp.git",
 	"license": "MIT",
@@ -52,7 +52,7 @@
 		"compression-webpack-plugin": "^8.0.1",
 		"console-table-printer": "^2.10.0",
 		"css-loader": "^6.2.0",
-		"css-minimizer-webpack-plugin": "^4.1.0",
+		"css-minimizer-webpack-plugin": "^7.0.4",
 		"dayjs": "^1.11.5",
 		"favicons": "^7.2.0",
 		"filesize": "^8.0.3",
@@ -88,7 +88,8 @@
 		"webpack-dev-middleware": "^5.1.0",
 		"webpack-hot-middleware": "^2.25.0",
 		"webpack-node-externals": "^3.0.0",
-		"webpack-virtual-modules": "^0.4.3"
+		"webpack-virtual-modules": "^0.4.3",
+		"yaml": "^2.8.2"
 	},
 	"devDependencies": {
 		"@types/babel__preset-env": "^7.9.6",

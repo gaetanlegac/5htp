@@ -308,9 +308,9 @@ export default function createCompiler( app: App, mode: TCompileMode ): webpack.
                         }
                     }),
 
-                    /*...(dev ? [] : [
+                    ...(dev ? [] : [
                         new CssMinimizerPlugin()
-                    ]),*/
+                    ]),
 
                     /*new ImageMinimizerPlugin({
                         // (optional) add generators; you can also just import &format=webp (see below)
