@@ -53,6 +53,13 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
     const t = babel.types as typeof types;
 
+    type TPluginState = {
+        filename: string,
+        file: TFileInfos,
+        apiInjectedRootFunctions: WeakSet<types.Node>,
+        needsUseContextImport: boolean
+    }
+
     /*
         - Wrap route.get(...) with (app: Application) => { }
         - Inject chunk ID into client route options
@@ -70,14 +77,14 @@ function Plugin(babel, { app, side, debug }: TOptions) {
         const stats = page.data.stats;
     */
 
-    const plugin: PluginObj<{ 
-        filename: string,
-        file: TFileInfos
-    }> = {
+    const plugin: PluginObj<TPluginState> = {
         pre(state) {
             this.filename = state.opts.filename as string;
 
             this.file = getFileInfos(this.filename);
+
+            this.apiInjectedRootFunctions = new WeakSet();
+            this.needsUseContextImport = false;
         },
         visitor: {
             // Find @app imports
@@ -203,6 +210,8 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                     */
                     if (side === 'client' && !clientServices.includes(serviceName)) {
 
+                        ensureApiExposedInRootFunction(path, this);
+
                         // Get complete call path
                         const apiPath = '/api/' + completePath.join('/');
                         
@@ -255,6 +264,8 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
                     if (!this.file.process)
                         return;
+
+                    ensureUseContextImport(path, this);
                         
                     const wrappedrouteDefs = wrapRouteDefs( this.file );
                     if (wrappedrouteDefs)
@@ -262,6 +273,187 @@ function Plugin(babel, { app, side, debug }: TOptions) {
                 }
             }
         }
+    }
+
+    function ensureApiExposedInRootFunction(
+        path: NodePath<types.CallExpression>,
+        pluginState: TPluginState
+    ) {
+        if (path.scope.hasBinding('api'))
+            return;
+
+        const rootFunctionPath = getRootFunctionPath(path);
+        if (!rootFunctionPath)
+            return;
+
+        // Root function should be at the program body level (not nested in another function / expression)
+        if (rootFunctionPath.getFunctionParent())
+            return;
+        if (!isProgramBodyLevelFunction(rootFunctionPath))
+            return;
+
+        if (pluginState.apiInjectedRootFunctions.has(rootFunctionPath.node))
+            return;
+
+        const exposeApiDeclaration = t.variableDeclaration('const', [
+            t.variableDeclarator(
+                t.objectPattern([
+                    t.objectProperty(t.identifier('api'), t.identifier('api'), false, true),
+                ]),
+                t.callExpression(t.identifier('useContext'), [])
+            )
+        ]);
+
+        const body = rootFunctionPath.node.body;
+        if (body.type === 'BlockStatement') {
+            body.body.unshift(exposeApiDeclaration);
+        } else {
+            rootFunctionPath.node.body = t.blockStatement([
+                exposeApiDeclaration,
+                t.returnStatement(body)
+            ]);
+        }
+
+        pluginState.apiInjectedRootFunctions.add(rootFunctionPath.node);
+        pluginState.needsUseContextImport = true;
+    }
+
+    function getRootFunctionPath(path: NodePath): NodePath<types.Function | types.ArrowFunctionExpression> | undefined {
+
+        let functionPath = path.getFunctionParent();
+        if (!functionPath)
+            return;
+
+        // Only support plain functions / arrow functions (no class/object methods)
+        if (!(
+            functionPath.isFunctionDeclaration()
+            || functionPath.isFunctionExpression()
+            || functionPath.isArrowFunctionExpression()
+        ))
+            return;
+
+        let parentFunction = functionPath.getFunctionParent();
+        while (parentFunction) {
+
+            if (!(
+                parentFunction.isFunctionDeclaration()
+                || parentFunction.isFunctionExpression()
+                || parentFunction.isArrowFunctionExpression()
+            ))
+                break;
+
+            functionPath = parentFunction;
+            parentFunction = functionPath.getFunctionParent();
+        }
+
+        return functionPath;
+    }
+
+    function isProgramBodyLevelFunction(path: NodePath): boolean {
+
+        const parent = path.parentPath;
+        if (!parent)
+            return false;
+
+        // function Foo() {}
+        if (parent.isProgram())
+            return true;
+
+        // export default function Foo() {} / export default () => {}
+        if (
+            parent.isExportDefaultDeclaration()
+            &&
+            parent.parentPath?.isProgram()
+        )
+            return true;
+
+        // export const Foo = () => {}
+        if (
+            parent.isExportNamedDeclaration()
+            &&
+            parent.parentPath?.isProgram()
+        )
+            return true;
+
+        // const Foo = () => {} (top-level) / export const Foo = () => {}
+        if (parent.isVariableDeclarator()) {
+
+            const declaration = parent.parentPath;
+            if (!declaration?.isVariableDeclaration())
+                return false;
+
+            const declarationParent = declaration.parentPath;
+            if (!declarationParent)
+                return false;
+
+            if (declarationParent.isProgram())
+                return true;
+
+            if (
+                declarationParent.isExportNamedDeclaration()
+                &&
+                declarationParent.parentPath?.isProgram()
+            )
+                return true;
+        }
+
+        return false;
+    }
+
+    function ensureUseContextImport(path: NodePath<types.Program>, pluginState: TPluginState) {
+
+        if (!pluginState.needsUseContextImport)
+            return;
+
+        const body = path.node.body;
+
+        // Already imported as a value import
+        for (const stmt of body) {
+            if (
+                stmt.type === 'ImportDeclaration'
+                &&
+                stmt.source.value === '@/client/context'
+                &&
+                stmt.importKind !== 'type'
+                &&
+                stmt.specifiers.some(s =>
+                    s.type === 'ImportDefaultSpecifier' && s.local.name === 'useContext'
+                )
+            )
+                return;
+        }
+
+        // Try to reuse an existing value import from the same module
+        for (const stmt of body) {
+            if (
+                stmt.type !== 'ImportDeclaration'
+                ||
+                stmt.source.value !== '@/client/context'
+                ||
+                stmt.importKind === 'type'
+            )
+                continue;
+
+            const hasDefaultImport = stmt.specifiers.some(s => s.type === 'ImportDefaultSpecifier');
+            if (!hasDefaultImport) {
+                stmt.specifiers.unshift(
+                    t.importDefaultSpecifier(t.identifier('useContext'))
+                );
+                return;
+            }
+        }
+
+        // Otherwise, add a new import (placed after existing imports)
+        const importDeclaration = t.importDeclaration(
+            [t.importDefaultSpecifier(t.identifier('useContext'))],
+            t.stringLiteral('@/client/context')
+        );
+
+        let insertIndex = 0;
+        while (insertIndex < body.length && body[insertIndex].type === 'ImportDeclaration')
+            insertIndex++;
+
+        body.splice(insertIndex, 0, importDeclaration);
     }
 
     function getFileInfos( filename: string ): TFileInfos {
@@ -302,7 +494,7 @@ function Plugin(babel, { app, side, debug }: TOptions) {
 
     function transformDataFetchers( 
         path: NodePath<types.CallExpression>, 
-        routerDefContext: PluginObj, 
+        routerDefContext: TPluginState, 
         routeDef: TRouteDefinition 
     ) {
         path.traverse({

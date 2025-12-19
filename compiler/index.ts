@@ -17,7 +17,6 @@ import cli from '..';
 import createServerConfig from './server';
 import createClientConfig from './client';
 import { TCompileMode } from './common';
-import { routerServices } from './common/babel/plugins/services';
 
 type TCompilerCallback = (compiler: webpack.Compiler) => void
 
